@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Gojo Films</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    /* Inline styles to enforce size differences */
+    #rotatingThumbnail {
+      max-width: 100%;
+      width: 100%;
+      padding-bottom: 56.25%; /* 16:9 aspect ratio for taller thumbnail */
+    }
+    .video-section .container .video-list {
+      display: flex;
+      overflow-x: auto;
+      gap: 10px;
+      padding-bottom: 10px;
+    }
+    .video-card {
+      flex: 0 0 auto;
+      width: 120px; /* Fixed width for consistency */
+    }
+    .video-card .relative {
+      padding-bottom: 20%; /* 5:4 aspect ratio for smaller, common size */
+    }
+    .video-card .play-icon svg {
+      width: 16px;
+      height: 16px; /* Smaller play icon */
+    }
+    .video-card h3 {
+      font-size: 0.5rem; /* Smaller text */
+      margin-top: 0.125rem; /* Minimal margin */
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .header-controls #searchIcon {
+      display: inline-block; /* Ensure search icon is visible */
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="logo">
+      <div class="circle-icon">ጎ</div>
+      <h1>Gojo Films</h1>
+    </div>
+    <div class="header-controls">
+      <span id="searchIcon" role="button" tabindex="0" aria-label="Search">
+        <svg viewBox="0 0 24 24" fill="#a3bffa" xmlns="http://www.w3.org/2000/svg">
+          <path d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 1 0-.7.7l.27.28v.79l5 5 1.5-1.5-5-5zm-6 0a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9z"/>
+        </svg>
+      </span>
+      <input id="searchInput" type="text" placeholder="Search movies..." aria-label="Search movies" />
+      <button id="langToggle">EN</button>
+    </div>
+  </header>
+
+  <section class="hero-section">
+    <div class="background-overlay"></div>
+    <div class="content">
+      <h2 class="text-3xl font-bold text-cyan-400 mb-4">Featured Movie</h2>
+      <div id="rotatingThumbnail" class="relative w-full">
+        <img id="thumbnailImg" src="https://img.youtube.com/vi/SxVyFHDyrRI/hqdefault.jpg" alt="Featured movie thumbnail" class="absolute top-0 left-0 w-full h-full object-cover transition-opacity duration-500" />
+        <div class="title-overlay absolute bottom-4 left-4 text-white text-xl font-semibold bg-black bg-opacity-70 p-2 rounded">
+          ጥላዬ (Telaye) - Full Amharic Movie 2022
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="tabs-container" role="tablist" aria-label="Movie categories">
+    <button class="tab-button active" role="tab" aria-selected="true" aria-controls="new-releases">New Releases</button>
+    <button class="tab-button" role="tab" aria-selected="false" aria-controls="popular">Popular</button>
+    <button class="tab-button" role="tab" aria-selected="false" aria-controls="trending">Trending</button>
+    <button class="tab-button" role="tab" aria-selected="false" aria-controls="classics">Classics</button>
+  </div>
+
+  <main>
+    <section class="video-section active" id="new-releases" role="tabpanel" aria-labelledby="new-releases-tab">
+      <div class="container mx-auto p-6">
+        <h2 class="text-2xl font-semibold mb-6 text-cyan-400">New Releases</h2>
+        <div id="new-releases-grid" class="video-list"></div>
+      </div>
+    </section>
+
+    <section class="video-section" id="popular" role="tabpanel" aria-labelledby="popular-tab" hidden>
+      <div class="container mx-auto p-6">
+        <h2 class="text-2xl font-semibold mb-6 text-cyan-400">Popular</h2>
+        <div id="popular-grid" class="video-list"></div>
+      </div>
+    </section>
+
+    <section class="video-section" id="trending" role="tabpanel" aria-labelledby="trending-tab" hidden>
+      <div class="container mx-auto p-6">
+        <h2 class="text-2xl font-semibold mb-6 text-cyan-400">Trending</h2>
+        <div id="trending-grid" class="video-list"></div>
+      </div>
+    </section>
+
+    <section class="video-section" id="classics" role="tabpanel" aria-labelledby="classics-tab" hidden>
+      <div class="container mx-auto p-6">
+        <h2 class="text-2xl font-semibold mb-6 text-cyan-400">Classics</h2>
+        <div id="classics-grid" class="video-list"></div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>&copy; 2025 Gojo Films. All rights reserved. | <a href="#">Privacy Policy</a> | <a href="#">Terms of Service</a></p>
+  </footer>
+
+  <script>
+    const tabs = document.querySelectorAll('.tab-button');
+    const sections = document.querySelectorAll('.video-section');
+
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        tabs.forEach(t => t.classList.remove('active'));
+        sections.forEach(s => s.classList.remove('active'));
+        tab.classList.add('active');
+        document.getElementById(tab.getAttribute('aria-controls')).classList.add('active');
+        tab.setAttribute('aria-selected', 'true');
+        tabs.forEach(t => t !== tab && t.setAttribute('aria-selected', 'false'));
+      });
+    });
+
+    let currentIndex = 0;
+    const thumbnails = [
+      { videoId: "SxVyFHDyrRI", title: "ጥላዬ (Telaye) - Full Amharic Movie 2022" },
+      { videoId: "phmIAGUlKVg", title: "ወዳጅ (Wedaj) - Full Ethiopian Movie 2023" },
+      { videoId: "u4n1bBSWPHY", title: "ወይኔ የአራዳ ልጅ 5 (Wayne Yarada Lij 5) - Full Movie 2020" },
+      { videoId: "WIJU3F5Vrmc", title: "ባለ ክራር (Bale Kirar) - Ethiopian Full Movie 2024" },
+    ];
+
+    function rotateThumbnail() {
+      const thumbnail = document.getElementById('rotatingThumbnail');
+      const img = document.getElementById('thumbnailImg');
+      const titleOverlay = thumbnail.querySelector('.title-overlay');
+
+      img.classList.add('fading');
+      setTimeout(() => {
+        currentIndex = (currentIndex + 1) % thumbnails.length;
+        img.src = `https://img.youtube.com/vi/${thumbnails[currentIndex].videoId}/hqdefault.jpg`;
+        titleOverlay.textContent = thumbnails[currentIndex].title;
+        img.classList.remove('fading');
+      }, 500);
+    }
+
+    setInterval(rotateThumbnail, 5000);
+
+    document.getElementById('rotatingThumbnail').addEventListener('click', () => {
+      const video = thumbnails[currentIndex];
+      window.location.href = `player.html?v=${encodeURIComponent(video.videoId)}&t=${encodeURIComponent(video.title)}`;
+    });
+
+    // Populate video grids
+    const movieVideos = [
+      { title: "ጥላዬ (Telaye) - Full Amharic Movie 2022", videoId: "SxVyFHDyrRI", category: "new-releases" },
+      { title: "ወዳጅ (Wedaj) - Full Ethiopian Movie 2023", videoId: "phmIAGUlKVg", category: "popular" },
+      { title: "ወይኔ የአራዳ ልጅ 5 (Wayne Yarada Lij 5)", videoId: "u4n1bBSWPHY", category: "trending" },
+      { title: "ባለ ክራር (Bale Kirar) - Ethiopian Full Movie 2024", videoId: "WIJU3F5Vrmc", category: "classics" },
+      { title: "የኔ መዳን (Yene Medan)", videoId: "abc123xyz", category: "new-releases" },
+      { title: "ፍቅር (Fikre)", videoId: "def456abc", category: "popular" },
+      { title: "ምስጋና (Mesgana)", videoId: "ghi789def", category: "trending" },
+      { title: "ዓመድ (Amed)", videoId: "jkl012ghi", category: "classics" },
+    ];
+
+    function loadVideos(category) {
+      const grid = document.getElementById(`${category}-grid`);
+      grid.innerHTML = "";
+      const filteredVideos = movieVideos.filter(video => video.category === category);
+      filteredVideos.forEach(video => {
+        const videoCard = document.createElement("div");
+        videoCard.className = "video-card cursor-pointer";
+        videoCard.innerHTML = `
+          <div class="relative" style="padding-bottom: 20%;">
+            <img src="https://img.youtube.com/vi/${video.videoId}/hqdefault.jpg" alt="${video.title.replace(/"/g, '&quot;')}" class="absolute top-0 left-0 w-full h-full object-cover" />
+            <div class="play-icon absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 pointer-events-none select-none" aria-hidden="true">
+              <svg width="16" height="16" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="24" cy="24" r="22" fill="url(#grad1)" fill-opacity="0.7" />
+                <path d="M20 17L33 24L20 31V17Z" fill="white" />
+                <defs>
+                  <linearGradient id="grad1" x1="0" y1="0" x2="48" y2="48" gradientUnits="userSpaceOnUse">
+                    <stop stop-color="#4fd1c5" />
+                    <stop offset="1" stop-color="#2c7a7b" />
+                  </linearGradient>
+                </defs>
+              </svg>
+            </div>
+          </div>
+          <h3 class="mt-0.125 text-xs font-medium text-gray-200">
+            ${video.title.replace(/</g, '&lt;').replace(/>/g, '&gt;')}
+          </h3>
+        `;
+        videoCard.addEventListener("click", () => {
+          window.location.href = `player.html?v=${encodeURIComponent(video.videoId)}&t=${encodeURIComponent(video.title)}`;
+        });
+        grid.appendChild(videoCard);
+        setTimeout(() => videoCard.classList.add("loaded"), 50);
+      });
+    }
+
+    // Load videos for all categories on page load
+    ['new-releases', 'popular', 'trending', 'classics'].forEach(loadVideos);
+
+    // Search functionality
+    const searchIcon = document.getElementById('searchIcon');
+    const searchInput = document.getElementById('searchInput');
+
+    searchIcon.addEventListener('click', () => {
+      searchInput.classList.toggle('active');
+      if (searchInput.classList.contains('active')) {
+        searchInput.focus();
+      }
+    });
+
+    searchInput.addEventListener('blur', () => {
+      searchInput.classList.remove('active');
+    });
+
+    searchInput.addEventListener('input', () => {
+      const query = searchInput.value.toLowerCase();
+      sections.forEach(section => {
+        const grid = section.querySelector('.video-list');
+        const cards = grid.getElementsByClassName('video-card');
+        Array.from(cards).forEach(card => {
+          const title = card.querySelector('h3').textContent.toLowerCase();
+          card.style.display = title.includes(query) ? 'flex' : 'none';
+        });
+      });
+    });
+
+    // Language toggle
+    const langToggle = document.getElementById('langToggle');
+    const tabLabels = {
+      EN: {
+        featured: "Featured",
+        "new-releases": "New Releases",
+        popular: "Popular",
+        trending: "Trending",
+        classics: "Classics"
+      },
+      AM: {
+        featured: "የተመረጡ",
+        "new-releases": "አዲስ መተዎች",
+        popular: "ተወዳጅ",
+        trending: "ተወዳጅ ያሉ",
+        classics: "ቋሚ ፊልሞች"
+      }
+    };
+
+    let currentLang = 'EN';
+    langToggle.addEventListener('click', () => {
+      currentLang = currentLang === 'EN' ? 'AM' : 'EN';
+      langToggle.textContent = currentLang;
+      tabs.forEach(tab => {
+        const control = tab.getAttribute('aria-controls');
+        tab.textContent = tabLabels[currentLang][control];
+      });
+      sections.forEach(section => {
+        const h2 = section.querySelector('h2');
+        if (h2) h2.textContent = tabLabels[currentLang][section.id];
+      });
+    });
+  </script>
+</body>
+</html>
