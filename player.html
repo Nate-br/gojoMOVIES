@@ -102,175 +102,452 @@
     <div id="suggestedMoviesGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"></div>
   </section>
 
- <script>
-  (function () {
-    // 1) Parse query
-    function getQueryParams() {
-      const params = {};
-      location.search.substring(1).split("&").forEach(pair => {
-        if (!pair) return;
-        const [k, v] = pair.split("=");
-        params[decodeURIComponent(k)] = decodeURIComponent(v || "");
-      });
-      return params;
-    }
-    const params = getQueryParams();
-    const videoId = params.v || "";
-    const title = params.t || "Gojo Films Video";
-    const startTime = parseFloat(params.time || params.s || "0") || 0;
-    let currentLang = (params.lang || localStorage.getItem('gojo_lang') || 'EN').toUpperCase();
-
-    // 2) Elements
-    const info = document.getElementById("info");
-    const playPauseBtn = document.getElementById("playPauseBtn");
-    const pauseCover = document.getElementById("pauseCover");
-    const suggestedMoviesGrid = document.getElementById("suggestedMoviesGrid");
-
-    // 3) Suggested movies: from cached catalog (v3/v2) or small fallback
-    function getCachedCatalog() {
-      for (const key of ['gojo_catalog_v3', 'gojo_catalog_v2']) {
-        try {
-          const raw = localStorage.getItem(key);
-          const cat = raw ? JSON.parse(raw) : null;
-          if (cat?.items?.length) return cat;
-        } catch {}
-      }
-      return null;
-    }
-    const FALLBACK_SUGGESTIONS = [
-      { title: "ጥላዬ (Telaye) - Full Amharic Movie 2022", videoId: "SxVyFHDyrRI" },
-      { title: "ወዳጅ (Wedaj) - Full Ethiopian Movie 2023", videoId: "phmIAGUlKVg" },
-      { title: "ወይኔ የአራዳ ልጅ 5 (Wayne Yarada Lij 5) - Full Movie 2020", videoId: "u4n1bBSWPHY" },
-      { title: "ባለ ክራር (Bale Kirar) - Ethiopian Full Movie 2024", videoId: "WIJU3F5Vrmc" }
-    ];
-    function loadSuggestedMovies() {
-      suggestedMoviesGrid.innerHTML = "";
-      let all = getCachedCatalog()?.items?.map(v => ({ title: v.title, videoId: v.videoId })) || FALLBACK_SUGGESTIONS;
-      all = all.filter(v => v.videoId !== videoId).slice(0, 8);
-      all.forEach(video => {
-        const card = document.createElement("div");
-        card.className = "video-card cursor-pointer";
-        card.innerHTML = `
-          <div class="relative" style="padding-bottom: 56.25%;">
-            <img src="https://img.youtube.com/vi/${video.videoId}/hqdefault.jpg"
-                 alt="${video.title.replace(/"/g, '&quot;')}"
-                 loading="lazy"
-                 class="absolute top-0 left-0 w-full h-full object-cover"/>
-            <div class="play-icon absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2"
-                 aria-hidden="true">
-              <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="24" cy="24" r="22" fill="url(#grad1)" fill-opacity="0.7" />
-                <path d="M20 17L33 24L20 31V17Z" fill="white" />
-                <defs>
-                  <linearGradient id="grad1" x1="0" y1="0" x2="48" y2="48" gradientUnits="userSpaceOnUse">
-                    <stop stop-color="#4fd1c5" />
-                    <stop offset="1" stop-color="#2c7a7b" />
-                  </linearGradient>
-                </defs>
-              </svg>
-            </div>
-          </div>
-          <h3 class="mt-2 text-sm font-medium text-gray-200" title="${video.title.replace(/"/g, '&quot;')}">
-            ${video.title.replace(/</g, '&lt;').replace(/>/g, '&gt;')}
-          </h3>
-        `;
-        card.addEventListener("click", () => {
-          const url = `player.html?v=${encodeURIComponent(video.videoId)}&t=${encodeURIComponent(video.title)}&lang=${encodeURIComponent(currentLang)}`;
-          window.location.href = url;
+  <script>
+    (function () {
+      // Parse query
+      function getQueryParams() {
+        const params = {};
+        location.search.substring(1).split("&").forEach(pair => {
+          if (!pair) return;
+          const [k, v] = pair.split("=");
+          params[decodeURIComponent(k)] = decodeURIComponent(v || "");
         });
-        suggestedMoviesGrid.appendChild(card);
-        setTimeout(() => card.classList.add("loaded"), 50);
+        return params;
+      }
+      const params = getQueryParams();
+      const videoId = params.v || "";
+      const title = params.t || "Gojo Films Video";
+      const startTime = parseFloat(params.time || params.s || "0") || 0;
+      let currentLang = (params.lang || localStorage.getItem('gojo_lang') || 'EN').toUpperCase();
+
+      // Elements
+      const info = document.getElementById("info");
+      const playPauseBtn = document.getElementById("playPauseBtn");
+      const pauseCover = document.getElementById("pauseCover");
+      const suggestedMoviesGrid = document.getElementById("suggestedMoviesGrid");
+      const interactionShield = document.getElementById("interactionShield");
+      const muteBtn = document.getElementById("muteBtn");
+      const volumeSlider = document.getElementById("volumeSlider");
+      const maximizeBtn = document.getElementById("maximizeBtn");
+      const progressContainer = document.getElementById("progress-container");
+      const progressBar = document.getElementById("progress");
+      const timeDisplay = document.getElementById("time-display");
+      const speedBtn = document.getElementById('speedBtn');
+      const speedMenu = document.getElementById('speedMenu');
+      const pipBtn = document.getElementById('pipBtn');
+      const copyLinkBtn = document.getElementById('copyLinkBtn');
+      const backBtn = document.getElementById('backBtn');
+      const previewThumbnail = document.getElementById('previewThumbnail');
+      const previewImage = document.getElementById('previewImage');
+
+      // Don’t block clicks
+      if (interactionShield) interactionShield.style.pointerEvents = 'none';
+
+      // Suggested movies
+      function getCachedCatalog() {
+        for (const key of ['gojo_catalog_v3', 'gojo_catalog_v2']) {
+          try {
+            const raw = localStorage.getItem(key);
+            const cat = raw ? JSON.parse(raw) : null;
+            if (cat?.items?.length) return cat;
+          } catch {}
+        }
+        return null;
+      }
+      const FALLBACK_SUGGESTIONS = [
+        { title: "ጥላዬ (Telaye) - Full Amharic Movie 2022", videoId: "SxVyFHDyrRI" },
+        { title: "ወዳጅ (Wedaj) - Full Ethiopian Movie 2023", videoId: "phmIAGUlKVg" },
+        { title: "ወይኔ የአራዳ ልጅ 5 (Wayne Yarada Lij 5) - Full Movie 2020", videoId: "u4n1bBSWPHY" },
+        { title: "ባለ ክራር (Bale Kirar) - Ethiopian Full Movie 2024", videoId: "WIJU3F5Vrmc" }
+      ];
+      function loadSuggestedMovies() {
+        suggestedMoviesGrid.innerHTML = "";
+        let all = getCachedCatalog()?.items?.map(v => ({ title: v.title, videoId: v.videoId })) || FALLBACK_SUGGESTIONS;
+        all = all.filter(v => v.videoId !== videoId).slice(0, 8);
+        all.forEach(video => {
+          const card = document.createElement("div");
+          card.className = "video-card cursor-pointer";
+          card.innerHTML = `
+            <div class="relative" style="padding-bottom: 56.25%;">
+              <img src="https://img.youtube.com/vi/${video.videoId}/hqdefault.jpg"
+                   alt="${video.title.replace(/"/g, '&quot;')}"
+                   loading="lazy"
+                   class="absolute top-0 left-0 w-full h-full object-cover"/>
+              <div class="play-icon absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" aria-hidden="true">
+                <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <circle cx="24" cy="24" r="22" fill="url(#grad1)" fill-opacity="0.7" />
+                  <path d="M20 17L33 24L20 31V17Z" fill="white" />
+                  <defs>
+                    <linearGradient id="grad1" x1="0" y1="0" x2="48" y2="48" gradientUnits="userSpaceOnUse">
+                      <stop stop-color="#4fd1c5" />
+                      <stop offset="1" stop-color="#2c7a7b" />
+                    </linearGradient>
+                  </defs>
+                </svg>
+              </div>
+            </div>
+            <h3 class="mt-2 text-sm font-medium text-gray-200" title="${video.title.replace(/"/g, '&quot;')}">
+              ${video.title.replace(/</g, '&lt;').replace(/>/g, '&gt;')}
+            </h3>
+          `;
+          card.addEventListener("click", () => {
+            const url = `player.html?v=${encodeURIComponent(video.videoId)}&t=${encodeURIComponent(video.title)}&lang=${encodeURIComponent(currentLang)}`;
+            window.location.href = url;
+          });
+          suggestedMoviesGrid.appendChild(card);
+          setTimeout(() => card.classList.add("loaded"), 50);
+        });
+      }
+      loadSuggestedMovies();
+
+      // Info
+      info.textContent = title;
+
+      // Player state
+      let player, duration = 0, ready = false, isMuted = false, isFullscreen = false;
+      let progressInterval = null, userSeeking = false, lastSavedTime = 0;
+
+      const playIconSVG = `<svg viewBox="0 0 24 24" fill="#4fd1c5" xmlns="http://www.w3.org/2000/svg"><path d="M8 5v14l11-7z"/></svg>`;
+      const pauseIconSVG = `<svg viewBox="0 0 24 24" fill="#4fd1c5" xmlns="http://www.w3.org/2000/svg"><rect x="6" y="5" width="4" height="14"/><rect x="14" y="5" width="4" height="14"/></svg>`;
+      const volumeIconSVG = `<svg viewBox="0 0 24 24" fill="#4fd1c5" xmlns="http://www.w3.org/2000/svg"><path d="M3 9v6h4l5 5V4L7 9H3z"/><path d="M16.5 12c0-1.77-1-3.29-2.5-4.03v8.06A4.97 4.97 0 0 0 16.5 12z"/></svg>`;
+      const muteIconSVG = `<svg viewBox="0 0 24 24" fill="#4fd1c5" xmlns="http://www.w3.org/2000/svg"><path d="M3 9v6h4l5 5V4L7 9H3z"/><line x1="19" y1="5" x2="5" y2="19" stroke="#4fd1c5" stroke-width="2"/><line x1="5" y1="5" x2="19" y2="19" stroke="#4fd1c5" stroke-width="2"/></svg>`;
+
+      function updatePlayPauseBtn(isPlaying) { playPauseBtn.innerHTML = isPlaying ? pauseIconSVG : playIconSVG; }
+      function showPause() { pauseCover.classList.remove('hidden'); }
+      function hidePause() { pauseCover.classList.add('hidden'); }
+      function updateVolumeSliderBackground(value) {
+        const percentage = value;
+        volumeSlider.style.background = `linear-gradient(to right, #4fd1c5 0%, #4fd1c5 ${percentage}%, #444c71 ${percentage}%, #444c71 100%)`;
+      }
+      function updateMuteBtnIcon() { muteBtn.innerHTML = isMuted ? muteIconSVG : volumeIconSVG; }
+
+      // Play with fallback (mute-then-play)
+      function ensurePlay() {
+        if (!player) return;
+        try { player.playVideo(); } catch {}
+        setTimeout(() => {
+          if (player.getPlayerState && player.getPlayerState() !== YT.PlayerState.PLAYING) {
+            try { player.mute(); isMuted = true; updateMuteBtnIcon(); player.playVideo(); } catch {}
+          }
+        }, 300);
+        hidePause();
+        updatePlayPauseBtn(true);
+      }
+
+      // YouTube API
+      window.onYouTubeIframeAPIReady = function () {
+        player = new YT.Player("player", {
+          videoId,
+          playerVars: {
+            modestbranding: 1, rel: 0, iv_load_policy: 3, controls: 0, disablekb: 1,
+            fs: 1, autoplay: 0, playsinline: 1, origin: location.origin
+          },
+          events: {
+            onReady: onPlayerReady,
+            onStateChange: onStateChange,
+            onError: onPlayerError
+          }
+        });
+      };
+      const tag = document.createElement("script");
+      tag.src = "https://www.youtube.com/iframe_api";
+      document.head.appendChild(tag);
+
+      function onPlayerReady() {
+        ready = true;
+        try {
+          const iframe = player.getIframe();
+          iframe.setAttribute('allow', 'autoplay; encrypted-media; picture-in-picture; fullscreen');
+          iframe.setAttribute('allowfullscreen', 'true');
+        } catch {}
+        duration = player.getDuration();
+        if (startTime > 0 && (!duration || startTime < duration)) player.seekTo(startTime, true);
+        showPause();
+        updatePlayPauseBtn(false);
+
+        // restore volume
+        const savedVol = parseInt(localStorage.getItem('gojo_volume') || '100', 10);
+        const savedMuted = localStorage.getItem('gojo_muted') === 'true';
+        player.setVolume(isNaN(savedVol) ? 100 : savedVol);
+        volumeSlider.value = isNaN(savedVol) ? 100 : savedVol;
+        isMuted = savedMuted || savedVol === 0;
+        if (isMuted) player.mute(); else player.unMute();
+        updateMuteBtnIcon();
+        updateVolumeSliderBackground(volumeSlider.value);
+
+        // Resume prompt
+        const resumeBox = document.getElementById("resumeBox");
+        const resumeTimeEl = document.getElementById("resumeTime");
+        const resumeYes = document.getElementById("resumeYes");
+        const resumeNo = document.getElementById("resumeNo");
+        let resumeAt = parseFloat(localStorage.getItem(`gojo_lastpos_${videoId}`) || '0');
+        if (startTime > 0) resumeAt = startTime;
+        if (resumeAt > 10 && (!duration || resumeAt < duration - 5)) {
+          resumeTimeEl.textContent = formatTime(resumeAt);
+          resumeBox.classList.remove('hidden');
+          resumeYes.onclick = () => { player.seekTo(resumeAt, true); ensurePlay(); resumeBox.classList.add('hidden'); };
+          resumeNo.onclick = () => { player.seekTo(0, true); ensurePlay(); resumeBox.classList.add('hidden'); };
+        } else {
+          resumeBox.classList.add('hidden');
+        }
+      }
+
+      function onStateChange(e) {
+        switch (e.data) {
+          case YT.PlayerState.PLAYING:
+            hidePause();
+            updatePlayPauseBtn(true);
+            startProgressUpdater();
+            break;
+          case YT.PlayerState.PAUSED:
+            showPause();
+            updatePlayPauseBtn(false);
+            stopProgressUpdater();
+            break;
+          case YT.PlayerState.ENDED:
+            showPause();
+            updatePlayPauseBtn(false);
+            stopProgressUpdater();
+            updateProgressBar(100);
+            if (duration) updateTimeDisplay(duration);
+            break;
+        }
+      }
+      function onPlayerError(err) {
+        console.warn('YouTube player error', err);
+        showPause();
+        updatePlayPauseBtn(false);
+      }
+
+      // Controls
+      pauseCover.addEventListener("click", () => { if (ready) ensurePlay(); });
+      playPauseBtn.addEventListener("click", () => {
+        if (!player || !ready) return;
+        const s = player.getPlayerState();
+        if (s === YT.PlayerState.PLAYING) player.pauseVideo();
+        else ensurePlay();
       });
-    }
-    // Show suggestions ASAP (don’t wait for YT)
-    loadSuggestedMovies();
 
-    // 4) Basic i18n text
-    info.textContent = title;
+      muteBtn.addEventListener("click", () => {
+        if (!player) return;
+        if (isMuted) { player.unMute(); isMuted = false; if (volumeSlider.value === "0") { volumeSlider.value = "30"; player.setVolume(30); } }
+        else { player.mute(); isMuted = true; }
+        localStorage.setItem('gojo_muted', isMuted ? 'true' : 'false');
+        updateMuteBtnIcon();
+        updateVolumeSliderBackground(volumeSlider.value);
+      });
 
-    // 5) YouTube player
-    let player, duration = 0;
-    const playIconSVG = `<svg viewBox="0 0 24 24" fill="#4fd1c5" xmlns="http://www.w3.org/2000/svg"><path d="M8 5v14l11-7z"/></svg>`;
-    const pauseIconSVG = `<svg viewBox="0 0 24 24" fill="#4fd1c5" xmlns="http://www.w3.org/2000/svg"><rect x="6" y="5" width="4" height="14"/><rect x="14" y="5" width="4" height="14"/></svg>`;
+      volumeSlider.addEventListener("input", (e) => {
+        if (!player) return;
+        const vol = parseInt(e.target.value, 10);
+        player.setVolume(vol);
+        isMuted = vol === 0;
+        if (isMuted) player.mute(); else player.unMute();
+        localStorage.setItem('gojo_volume', String(vol));
+        localStorage.setItem('gojo_muted', isMuted ? 'true' : 'false');
+        updateMuteBtnIcon();
+        updateVolumeSliderBackground(vol);
+      });
 
-    function updatePlayPauseBtn(isPlaying) {
-      playPauseBtn.innerHTML = isPlaying ? pauseIconSVG : playIconSVG;
-    }
-    function showPause() { pauseCover.classList.remove('hidden'); }
-    function hidePause() { pauseCover.classList.add('hidden'); }
-
-    window.onYouTubeIframeAPIReady = function () {
-      player = new YT.Player("player", {
-        videoId,
-        playerVars: {
-          modestbranding: 1,
-          rel: 0,
-          iv_load_policy: 3,
-          controls: 0,
-          disablekb: 1,
-          fs: 1,
-          autoplay: 0,      // start paused
-          playsinline: 1,
-          origin: location.origin
-        },
-        events: {
-          onReady: onPlayerReady,
-          onStateChange: onPlayerStateChange,
-          onError: onPlayerError
+      maximizeBtn.addEventListener("click", () => {
+        const el = document.getElementById("playerContainer");
+        if (!document.fullscreenElement) {
+          (el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen || el.msRequestFullscreen)?.call(el);
+        } else {
+          (document.exitFullscreen || document.webkitExitFullscreen || document.mozCancelFullScreen || document.msExitFullscreen)?.call(document);
         }
       });
-    };
-    // Load the API
-    const tag = document.createElement("script");
-    tag.src = "https://www.youtube.com/iframe_api";
-    document.head.appendChild(tag);
 
-    function onPlayerReady() {
-      // Allow PiP/autoplay after gesture
-      try {
-        const iframe = player.getIframe();
-        iframe.setAttribute('allow', 'autoplay; encrypted-media; picture-in-picture; fullscreen');
-        iframe.setAttribute('allowfullscreen', 'true');
-      } catch {}
-      duration = player.getDuration();
-      if (startTime > 0 && startTime < duration) player.seekTo(startTime, true);
-      showPause();
-      updatePlayPauseBtn(false);
-    }
-
-    function onStateChange(e) {
-      switch (e.data) {
-        case YT.PlayerState.PLAYING:
-          hidePause();
-          updatePlayPauseBtn(true);
-          break;
-        case YT.PlayerState.PAUSED:
-          showPause();
-          updatePlayPauseBtn(false);
-          break;
-        case YT.PlayerState.ENDED:
-          showPause();
-          updatePlayPauseBtn(false);
-          break;
+      // Progress / time
+      function updateProgressBar(percent) {
+        percent = Math.min(Math.max(percent, 0), 100);
+        progressBar.style.width = percent + "%";
+        progressContainer.setAttribute("aria-valuenow", percent.toFixed(0));
       }
-    }
-    function onPlayerError(err) {
-      console.warn('YouTube player error', err);
-    }
+      function formatTime(s) {
+        s = Math.floor(s || 0);
+        const m = Math.floor(s / 60);
+        const sec = s % 60;
+        return m + ":" + (sec < 10 ? "0" + sec : sec);
+      }
+      function updateTimeDisplay(current) {
+        current = Math.min(Math.max(current, 0), duration || 0);
+        timeDisplay.textContent = formatTime(current) + " / " + formatTime(duration || 0);
+      }
+      function startProgressUpdater() {
+        stopProgressUpdater();
+        progressInterval = setInterval(() => {
+          if (player && player.getPlayerState() === YT.PlayerState.PLAYING) {
+            const current = player.getCurrentTime();
+            updateProgressBar(duration ? (current / duration) * 100 : 0);
+            updateTimeDisplay(current);
+            const t = Math.floor(current);
+            if (t !== lastSavedTime) {
+              lastSavedTime = t;
+              localStorage.setItem(`gojo_lastpos_${videoId}`, String(t));
+            }
+          }
+        }, 500);
+      }
+      function stopProgressUpdater() {
+        if (progressInterval) { clearInterval(progressInterval); progressInterval = null; }
+      }
 
-    // 6) Controls
-    pauseCover.addEventListener("click", () => { if (player) player.playVideo(); });
-    playPauseBtn.addEventListener("click", () => {
-      if (!player) return;
-      const s = player.getPlayerState();
-      if (s === YT.PlayerState.PLAYING) player.pauseVideo();
-      else player.playVideo();
-    });
+      progressContainer.addEventListener("mousedown", () => { userSeeking = true; });
+      progressContainer.addEventListener("mouseup", (e) => {
+        if (!player || !duration) return;
+        const rect = progressContainer.getBoundingClientRect();
+        const ratio = Math.min(Math.max((e.clientX - rect.left) / rect.width, 0), 1);
+        const t = ratio * duration;
+        player.seekTo(t, true);
+        updateProgressBar(ratio * 100);
+        updateTimeDisplay(t);
+        userSeeking = false;
+        hidePause();
+      });
 
-    // 7) Safety: log any blocking error early
-    window.addEventListener('error', (e) => console.error('Script error:', e.message));
-  })();
-</script>
+      // Preview thumbnails on scrub
+      const preloadedThumbs = [];
+      function preloadThumbnails() {
+        for (let i = 0; i <= 3; i++) {
+          const img = new Image();
+          img.src = `https://img.youtube.com/vi/${videoId}/${i}.jpg`;
+          preloadedThumbs[i] = img;
+        }
+      }
+      preloadThumbnails();
+
+      progressContainer.addEventListener("mousemove", (e) => {
+        const rect = progressContainer.getBoundingClientRect();
+        let x = e.clientX - rect.left;
+        x = Math.min(Math.max(x, 0), rect.width);
+        const time = duration ? (x / rect.width) * duration : 0;
+
+        let previewX = x - previewThumbnail.offsetWidth / 2;
+        previewX = Math.min(Math.max(previewX, 0), rect.width - previewThumbnail.offsetWidth);
+        previewThumbnail.style.left = previewX + "px";
+        previewThumbnail.style.display = duration ? "block" : "none";
+
+        const percentage = duration ? (time / duration) : 0;
+        let idx = percentage > 0.75 ? 3 : percentage > 0.5 ? 2 : percentage > 0.25 ? 1 : 0;
+        const url = preloadedThumbs[idx]?.src || `https://img.youtube.com/vi/${videoId}/${idx}.jpg`;
+        if (previewImage.src !== url) {
+          previewImage.style.opacity = '0';
+          previewImage.src = url;
+          setTimeout(() => { previewImage.style.opacity = '1'; }, 50);
+        }
+      });
+      progressContainer.addEventListener("mouseleave", () => { previewThumbnail.style.display = "none"; });
+
+      // Speed controls
+      function updateSpeedUI(rate) {
+        speedBtn.textContent = rate + "x";
+        Array.from(speedMenu.querySelectorAll('button')).forEach(b => {
+          const r = parseFloat(b.dataset.speed);
+          b.classList.toggle('active', r === rate);
+        });
+        localStorage.setItem('gojo_speed', String(rate));
+      }
+      speedBtn.addEventListener('click', () => { speedMenu.classList.toggle('hidden'); });
+      document.addEventListener('click', (e) => {
+        if (!speedMenu.contains(e.target) && e.target !== speedBtn) speedMenu.classList.add('hidden');
+      });
+      speedMenu.querySelectorAll('button').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const rate = parseFloat(btn.dataset.speed);
+          if (player?.setPlaybackRate) player.setPlaybackRate(rate);
+          updateSpeedUI(rate);
+          speedMenu.classList.add('hidden');
+        });
+      });
+
+      // PiP hint (YouTube iframe usually blocks programmatic PiP)
+      pipBtn.addEventListener('click', () => {
+        const original = pipBtn.title;
+        pipBtn.title = "Right-click twice on the video and choose Picture-in-Picture";
+        setTimeout(() => { pipBtn.title = original; }, 6000);
+      });
+
+      // Copy link
+      copyLinkBtn.addEventListener("click", async () => {
+        const url = new URL(window.location.href);
+        const current = Math.floor(player?.getCurrentTime?.() || 0);
+        url.searchParams.set('v', videoId);
+        url.searchParams.set('t', title);
+        url.searchParams.set('time', current);
+        url.searchParams.set('lang', currentLang);
+        try {
+          if (navigator.clipboard && window.isSecureContext) {
+            await navigator.clipboard.writeText(url.toString());
+          } else {
+            const temp = document.createElement('textarea');
+            temp.value = url.toString();
+            document.body.appendChild(temp);
+            temp.select();
+            document.execCommand('copy');
+            temp.remove();
+          }
+          copyLinkBtn.title = "Copied!";
+          setTimeout(() => { copyLinkBtn.title = "Copy link"; }, 1200);
+        } catch { alert("Failed to copy link."); }
+      });
+
+      // Back
+      backBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        try {
+          if (document.referrer && new URL(document.referrer).origin === location.origin) { history.back(); return; }
+        } catch {}
+        location.href = "index.html";
+      });
+
+      // Keyboard shortcuts
+      document.addEventListener('keydown', (e) => {
+        const tag = document.activeElement?.tagName;
+        if (['INPUT','TEXTAREA','SELECT','BUTTON','A'].includes(tag)) return;
+        if (e.ctrlKey || e.metaKey || e.altKey) return;
+
+        const key = e.key;
+        if (key === ' ' || key.toLowerCase() === 'k') { e.preventDefault(); if (player?.getPlayerState() === YT.PlayerState.PLAYING) player.pauseVideo(); else ensurePlay(); }
+        else if (key.toLowerCase() === 'm') { e.preventDefault(); muteBtn.click(); }
+        else if (key.toLowerCase() === 'f') { e.preventDefault(); maximizeBtn.click(); }
+        else if (key.toLowerCase() === 'j') { e.preventDefault(); seekRelative(-10); }
+        else if (key.toLowerCase() === 'l') { e.preventDefault(); seekRelative(10); }
+        else if (key === '>' || (key === '.' && e.shiftKey)) { e.preventDefault(); changeSpeed(+1); }
+        else if (key === '<' || (key === ',' && e.shiftKey)) { e.preventDefault(); changeSpeed(-1); }
+        else if (/^[0-9]$/.test(key)) { e.preventDefault(); jumpToPercent(parseInt(key,10) * 10); }
+      });
+      function seekRelative(delta) {
+        if (!player || !duration) return;
+        const current = player.getCurrentTime();
+        let next = Math.min(Math.max(current + delta, 0), duration);
+        player.seekTo(next, true);
+        updateProgressBar((next / duration) * 100);
+        updateTimeDisplay(next);
+        hidePause();
+      }
+      function changeSpeed(delta) {
+        const rates = player.getAvailablePlaybackRates ? player.getAvailablePlaybackRates() : [0.5,0.75,1,1.25,1.5,1.75,2];
+        let current = player.getPlaybackRate ? player.getPlaybackRate() : 1;
+        let idx = rates.indexOf(current);
+        if (idx === -1) idx = rates.indexOf(1);
+        idx = Math.min(Math.max(idx + delta, 0), rates.length - 1);
+        const newRate = rates[idx];
+        if (player?.setPlaybackRate) player.setPlaybackRate(newRate);
+        updateSpeedUI(newRate);
+      }
+      function jumpToPercent(percent) {
+        if (!player || !duration) return;
+        const t = (percent / 100) * duration;
+        player.seekTo(t, true);
+        updateProgressBar(percent);
+        updateTimeDisplay(t);
+        hidePause();
+      }
+
+      // Safety logging
+      window.addEventListener('error', (e) => console.error('Script error:', e.message));
+    })();
+  </script>
 </body>
 </html>
-
