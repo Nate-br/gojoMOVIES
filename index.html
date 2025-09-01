@@ -84,10 +84,8 @@
   </footer>
 
   <script>
-    // Adjust this depending on your hosting:
-    // - Vercel: '/api/catalog'
-    // - Netlify: '/.netlify/functions/catalog'
-    const CATALOG_ENDPOINT = '/api/catalog';
+    // Endpoint and cache settings
+    const CATALOG_ENDPOINT = `${location.origin}/api/catalog`;
     const CATALOG_KEY = 'gojo_catalog_v3';
     const API_TTL_MS = 6 * 60 * 60 * 1000;
 
@@ -235,8 +233,8 @@
     ];
     function applyHeroFromCatalog(cat) {
       const newRel = cat?.categories?.['new-releases'] || [];
-      if (newRel.length >= 4) {
-        heroItems = newRel.slice(0, 8); // up to 8 latest
+      if (newRel.length >= 1) {
+        heroItems = newRel.slice(0, 8);
         heroIndex = 0;
         const img = document.getElementById('thumbnailImg');
         const titleOverlay = document.querySelector('#rotatingThumbnail .title-overlay');
@@ -244,8 +242,8 @@
         titleOverlay.textContent = heroItems[0].title;
       }
     }
-
     function rotateHero() {
+      if (!heroItems.length) return;
       const thumbnail = document.getElementById('rotatingThumbnail');
       const img = document.getElementById('thumbnailImg');
       const titleOverlay = thumbnail.querySelector('.title-overlay');
@@ -260,26 +258,52 @@
     }
     setInterval(rotateHero, 5000);
     document.getElementById('rotatingThumbnail').addEventListener('click', () => {
+      if (!heroItems.length) return;
       const item = heroItems[heroIndex];
       window.location.href = `player.html?v=${encodeURIComponent(item.videoId)}&t=${encodeURIComponent(item.title)}&lang=${encodeURIComponent(currentLang)}`;
     });
 
     // Build grids from catalog
     function setFromCatalog(cat) {
-      // Flatten categories to the older structure the grid renderer expects
       movieVideos = [];
       ['new-releases','popular','trending','classics'].forEach(key => {
         const list = (cat.categories?.[key] || []).map(v => ({ ...v, category: key }));
         movieVideos.push(...list);
       });
-      ['new-releases', 'popular', 'trending', 'classics'].forEach(loadVideos);
+      ['new-releases','popular','trending','classics'].forEach(loadVideos);
       applyHeroFromCatalog(cat);
     }
 
-    // Fetch from serverless
+    // Fallback so UI is never empty
+    const FALLBACK_CATALOG = {
+      fetchedAt: Date.now(),
+      categories: {
+        'new-releases': [
+          { title: "ጥላዬ (Telaye) - Full Amharic Movie 2022", videoId: "SxVyFHDyrRI" },
+          { title: "ባለ ክራር (Bale Kirar) - Ethiopian Full Movie 2024", videoId: "WIJU3F5Vrmc" }
+        ],
+        popular: [
+          { title: "ወዳጅ (Wedaj) - Full Ethiopian Movie 2023", videoId: "phmIAGUlKVg" }
+        ],
+        trending: [
+          { title: "ወይኔ የአራዳ ልጅ 5 (Wayne Yarada Lij 5) - Full Movie 2020", videoId: "u4n1bBSWPHY" }
+        ],
+        classics: [
+          { title: "ባለ ክራር (Bale Kirar) - Ethiopian Full Movie 2024", videoId: "WIJU3F5Vrmc" }
+        ]
+      }
+    };
+    function setFromFallback() { setFromCatalog(FALLBACK_CATALOG); }
+    function isCatalogEmpty(cat) {
+      const cats = cat?.categories || {};
+      return ['new-releases','popular','trending','classics']
+        .every(k => !Array.isArray(cats[k]) || cats[k].length === 0);
+    }
+
+    // Fetch from serverless (with fallback)
     async function fetchCatalog(force=false) {
       const cached = !force && getCachedCatalog();
-      if (cached) {
+      if (cached && !isCatalogEmpty(cached)) {
         setFromCatalog(cached);
         return cached;
       }
@@ -292,87 +316,36 @@
         const res = await fetch(url, { cache: force ? 'no-store' : 'default' });
         if (!res.ok) throw new Error('Fetch failed');
         const cat = await res.json();
+        if (!cat?.categories || isCatalogEmpty(cat)) {
+          console.warn('Catalog empty, using fallback');
+          setFromFallback();
+          return FALLBACK_CATALOG;
+        }
         setCachedCatalog(cat);
         setFromCatalog(cat);
         return cat;
       } catch (e) {
-        console.warn('Catalog fetch failed:', e);
-        // If we had a previous cached version (even expired), try to use it
+        console.warn('Catalog fetch failed; using fallback', e);
         const raw = localStorage.getItem(CATALOG_KEY);
         if (raw) {
-          try { setFromCatalog(JSON.parse(raw)); } catch {}
+          try {
+            const old = JSON.parse(raw);
+            if (!isCatalogEmpty(old)) { setFromCatalog(old); return old; }
+          } catch {}
         }
+        setFromFallback();
+        return FALLBACK_CATALOG;
       } finally {
         btn.disabled = false;
         btn.innerHTML = original;
       }
     }
-const FALLBACK_CATALOG = {
-fetchedAt: Date.now(),
-categories: {
-'new-releases': [
-{ title: "ጥላዬ (Telaye) - Full Amharic Movie 2022", videoId: "SxVyFHDyrRI" },
-{ title: "ባለ ክራር (Bale Kirar) - Ethiopian Full Movie 2024", videoId: "WIJU3F5Vrmc" }
-],
-popular: [
-{ title: "ወዳጅ (Wedaj) - Full Ethiopian Movie 2023", videoId: "phmIAGUlKVg" }
-],
-trending: [
-{ title: "ወይኔ የአራዳ ልጅ 5 (Wayne Yarada Lij 5) - Full Movie 2020", videoId: "u4n1bBSWPHY" }
-],
-classics: [
-{ title: "ባለ ክራር (Bale Kirar) - Ethiopian Full Movie 2024", videoId: "WIJU3F5Vrmc" }
-]
-}
-};
-function setFromFallback() { setFromCatalog(FALLBACK_CATALOG); }
-function isCatalogEmpty(cat) {
-const cats = cat?.categories || {};
-return ['new-releases','popular','trending','classics']
-.every(k => !Array.isArray(cats[k]) || cats[k].length === 0);
-}
-   async function fetchCatalog(force=false) {
-const cached = !force && getCachedCatalog();
-if (cached && !isCatalogEmpty(cached)) {
-setFromCatalog(cached);
-return cached;
-}
-const btn = document.getElementById('refreshBtn');
-const original = btn.innerHTML;
-try {
-btn.disabled = true;
-btn.innerHTML = <svg class="spinner" viewBox="0 0 24 24" width="18" height="18" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="9" stroke="#0f111a" stroke-width="3" fill="none" stroke-linecap="round" stroke-dasharray="42"/></svg>;
-const url = force ? ${CATALOG_ENDPOINT}?force=1 : CATALOG_ENDPOINT;
-const res = await fetch(url, { cache: force ? 'no-store' : 'default' });
-if (!res.ok) throw new Error('Fetch failed');
-const cat = await res.json();
-if (!cat?.categories || isCatalogEmpty(cat)) {
-console.warn('Catalog empty, using fallback');
-setFromFallback();
-return FALLBACK_CATALOG;
-}
-setCachedCatalog(cat);
-setFromCatalog(cat);
-return cat;
-} catch (e) {
-console.warn('Catalog fetch failed; using fallback', e);
-const raw = localStorage.getItem(CATALOG_KEY);
-if (raw) {
-try {
-const old = JSON.parse(raw);
-if (!isCatalogEmpty(old)) { setFromCatalog(old); return old; }
-} catch {}
-}
-setFromFallback();
-return FALLBACK_CATALOG;
-} finally {
-btn.disabled = false;
-btn.innerHTML = original;
-}
-}
-   
-    
+
+    // Init
+    fetchCatalog(false);
+    document.getElementById('refreshBtn').addEventListener('click', () => {
+      fetchCatalog(true);
+    });
   </script>
 </body>
 </html>
-
