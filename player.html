@@ -15,10 +15,11 @@
     <div id="playerContainer" aria-label="YouTube video player container">
       <div id="player" role="region" aria-live="off" aria-atomic="true"></div>
 
-      <!-- Subtle gradients only -->
+      <!-- Subtle gradient masks to soften YT UI edges -->
       <div class="branding-cover-overlay" aria-hidden="true"></div>
       <div class="top-branding-cover" aria-hidden="true"></div>
 
+      <!-- Interaction shield (captures clicks so YT UI doesn't) -->
       <div id="interactionShield" aria-hidden="true" title="Interaction Shield"></div>
 
       <!-- Pause overlay (visible first) -->
@@ -104,7 +105,7 @@
 
   <script>
     (function () {
-      // Parse query
+      // Query params
       function getQueryParams() {
         const params = {};
         location.search.substring(1).split("&").forEach(pair => {
@@ -139,9 +140,6 @@
       const backBtn = document.getElementById('backBtn');
       const previewThumbnail = document.getElementById('previewThumbnail');
       const previewImage = document.getElementById('previewImage');
-
-      // Don’t block clicks
-      if (interactionShield) interactionShield.style.pointerEvents = 'none';
 
       // Suggested movies
       function getCachedCatalog() {
@@ -200,7 +198,6 @@
       }
       loadSuggestedMovies();
 
-      // Info
       info.textContent = title;
 
       // Player state
@@ -297,26 +294,48 @@
           case YT.PlayerState.PLAYING:
             hidePause();
             updatePlayPauseBtn(true);
+            if (interactionShield) interactionShield.style.pointerEvents = 'auto';
             startProgressUpdater();
             break;
           case YT.PlayerState.PAUSED:
             showPause();
             updatePlayPauseBtn(false);
+            if (interactionShield) interactionShield.style.pointerEvents = 'none';
             stopProgressUpdater();
             break;
           case YT.PlayerState.ENDED:
             showPause();
             updatePlayPauseBtn(false);
+            if (interactionShield) interactionShield.style.pointerEvents = 'none';
             stopProgressUpdater();
             updateProgressBar(100);
             if (duration) updateTimeDisplay(duration);
             break;
         }
       }
+
       function onPlayerError(err) {
         console.warn('YouTube player error', err);
         showPause();
         updatePlayPauseBtn(false);
+      }
+
+      // Interaction shield: toggle play/pause, block YT UI
+      if (interactionShield) {
+        interactionShield.style.pointerEvents = 'none'; // enabled when playing
+        interactionShield.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          if (!ready || !player) return;
+          const s = player.getPlayerState ? player.getPlayerState() : null;
+          if (s === YT.PlayerState.PLAYING) player.pauseVideo();
+          else ensurePlay();
+        });
+        interactionShield.addEventListener('touchstart', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+        }, { passive: false });
+        interactionShield.addEventListener('contextmenu', (e) => e.preventDefault());
       }
 
       // Controls
@@ -358,7 +377,7 @@
         }
       });
 
-      // Progress / time
+      // Progress & time
       function updateProgressBar(percent) {
         percent = Math.min(Math.max(percent, 0), 100);
         progressBar.style.width = percent + "%";
@@ -406,7 +425,7 @@
         hidePause();
       });
 
-      // Preview thumbnails on scrub
+      // Scrub preview
       const preloadedThumbs = [];
       function preloadThumbnails() {
         for (let i = 0; i <= 3; i++) {
@@ -439,7 +458,7 @@
       });
       progressContainer.addEventListener("mouseleave", () => { previewThumbnail.style.display = "none"; });
 
-      // Speed controls
+      // Speed menu
       function updateSpeedUI(rate) {
         speedBtn.textContent = rate + "x";
         Array.from(speedMenu.querySelectorAll('button')).forEach(b => {
@@ -461,7 +480,7 @@
         });
       });
 
-      // PiP hint (YouTube iframe usually blocks programmatic PiP)
+      // PiP hint
       pipBtn.addEventListener('click', () => {
         const original = pipBtn.title;
         pipBtn.title = "Right-click twice on the video and choose Picture-in-Picture";
