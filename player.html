@@ -102,218 +102,106 @@
     <div id="suggestedMoviesGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"></div>
   </section>
 
-  <script>
-    // Helpers
+ <script>
+  (function () {
+    // 1) Parse query
     function getQueryParams() {
       const params = {};
       location.search.substring(1).split("&").forEach(pair => {
         if (!pair) return;
-        const [key, value] = pair.split("=");
-        params[decodeURIComponent(key)] = decodeURIComponent(value || "");
+        const [k, v] = pair.split("=");
+        params[decodeURIComponent(k)] = decodeURIComponent(v || "");
       });
       return params;
     }
-
     const params = getQueryParams();
     const videoId = params.v || "";
     const title = params.t || "Gojo Films Video";
     const startTime = parseFloat(params.time || params.s || "0") || 0;
     let currentLang = (params.lang || localStorage.getItem('gojo_lang') || 'EN').toUpperCase();
 
-    // Language strings
-    const i18n = {
-      EN: {
-        loading: "Loading...", back: "Back to Gojo Films", suggested: "Suggested Movies",
-        playPause: "Play/Pause", mute: "Mute/Unmute", volume: "Volume",
-        fullscreen: "Fullscreen", exitFullscreen: "Exit Fullscreen", copyLink: "Copy link", copied: "Copied!",
-        resumeQuestion: "Continue from"
-      },
-      AM: {
-        loading: "በመጫን ላይ...", back: "ወደ ጎጆ ፊልሞች ተመለስ", suggested: "የተመከሩ ፊልሞች",
-        playPause: "አጫውት/አቁም", mute: "ዝም/አንቀሳቅስ", volume: "ድምፅ",
-        fullscreen: "ሙሉ ማያ", exitFullscreen: "ከሙሉ ማያ ውጣ", copyLink: "አገናኝ ቅዳ", copied: "ተቀድቷል!",
-        resumeQuestion: "ቀጥል ከ"
-      }
-    };
-
-    function applyLang() {
-      const dict = i18n[currentLang] || i18n.EN;
-      document.getElementById('backBtn').textContent = dict.back;
-      document.getElementById('suggestedHeading').textContent = dict.suggested;
-      const infoEl = document.getElementById('info');
-      if (infoEl && (!videoId || infoEl.textContent === 'Loading...' || infoEl.textContent === i18n.EN.loading || infoEl.textContent === i18n.AM.loading)) {
-        infoEl.textContent = dict.loading;
-      }
-      document.getElementById('playPauseBtn').title = dict.playPause;
-      document.getElementById('muteBtn').title = dict.mute;
-      document.getElementById('volumeSlider').setAttribute('aria-label', dict.volume);
-      document.getElementById('copyLinkBtn').title = dict.copyLink;
-      document.getElementById('maximizeBtn').title = isFullscreen ? dict.exitFullscreen : dict.fullscreen;
-      localStorage.setItem('gojo_lang', currentLang);
-    }
-
-    // Elements
+    // 2) Elements
     const info = document.getElementById("info");
     const playPauseBtn = document.getElementById("playPauseBtn");
-    const progressContainer = document.getElementById("progress-container");
-    const progressBar = document.getElementById("progress");
-    const timeDisplay = document.getElementById("time-display");
-    const backBtn = document.getElementById("backBtn");
-    const brandingOverlay = document.querySelector('.branding-cover-overlay');
-    const topBrandingCover = document.querySelector('.top-branding-cover');
     const pauseCover = document.getElementById("pauseCover");
-    const resumeBox = document.getElementById("resumeBox");
-    const resumeTimeEl = document.getElementById("resumeTime");
-    const resumeYes = document.getElementById("resumeYes");
-    const resumeNo = document.getElementById("resumeNo");
-    const playerWrapper = document.getElementById('playerWrapper');
-    const muteBtn = document.getElementById("muteBtn");
-    const volumeSlider = document.getElementById("volumeSlider");
-    const previewThumbnail = document.getElementById("previewThumbnail");
-    const previewImage = document.getElementById("previewImage");
-    const interactionShield = document.getElementById("interactionShield");
-    const maximizeBtn = document.getElementById("maximizeBtn");
-    const copyLinkBtn = document.getElementById("copyLinkBtn");
-    const speedBtn = document.getElementById('speedBtn');
-    const speedMenu = document.getElementById('speedMenu');
-    const pipBtn = document.getElementById('pipBtn');
+    const suggestedMoviesGrid = document.getElementById("suggestedMoviesGrid");
 
-    let player;
-    let duration = 0;
-    let progressInterval = null;
-    let userSeeking = false;
-    let overlayTimeout;
-    let overlayManuallyShown = true; // starts with overlay visible
-    let isMuted = false;
-    let isFullscreen = false;
-    let previewTimeout;
-    let lastSavedTime = 0;
+    // 3) Suggested movies: from cached catalog (v3/v2) or small fallback
+    function getCachedCatalog() {
+      for (const key of ['gojo_catalog_v3', 'gojo_catalog_v2']) {
+        try {
+          const raw = localStorage.getItem(key);
+          const cat = raw ? JSON.parse(raw) : null;
+          if (cat?.items?.length) return cat;
+        } catch {}
+      }
+      return null;
+    }
+    const FALLBACK_SUGGESTIONS = [
+      { title: "ጥላዬ (Telaye) - Full Amharic Movie 2022", videoId: "SxVyFHDyrRI" },
+      { title: "ወዳጅ (Wedaj) - Full Ethiopian Movie 2023", videoId: "phmIAGUlKVg" },
+      { title: "ወይኔ የአራዳ ልጅ 5 (Wayne Yarada Lij 5) - Full Movie 2020", videoId: "u4n1bBSWPHY" },
+      { title: "ባለ ክራር (Bale Kirar) - Ethiopian Full Movie 2024", videoId: "WIJU3F5Vrmc" }
+    ];
+    function loadSuggestedMovies() {
+      suggestedMoviesGrid.innerHTML = "";
+      let all = getCachedCatalog()?.items?.map(v => ({ title: v.title, videoId: v.videoId })) || FALLBACK_SUGGESTIONS;
+      all = all.filter(v => v.videoId !== videoId).slice(0, 8);
+      all.forEach(video => {
+        const card = document.createElement("div");
+        card.className = "video-card cursor-pointer";
+        card.innerHTML = `
+          <div class="relative" style="padding-bottom: 56.25%;">
+            <img src="https://img.youtube.com/vi/${video.videoId}/hqdefault.jpg"
+                 alt="${video.title.replace(/"/g, '&quot;')}"
+                 loading="lazy"
+                 class="absolute top-0 left-0 w-full h-full object-cover"/>
+            <div class="play-icon absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2"
+                 aria-hidden="true">
+              <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="24" cy="24" r="22" fill="url(#grad1)" fill-opacity="0.7" />
+                <path d="M20 17L33 24L20 31V17Z" fill="white" />
+                <defs>
+                  <linearGradient id="grad1" x1="0" y1="0" x2="48" y2="48" gradientUnits="userSpaceOnUse">
+                    <stop stop-color="#4fd1c5" />
+                    <stop offset="1" stop-color="#2c7a7b" />
+                  </linearGradient>
+                </defs>
+              </svg>
+            </div>
+          </div>
+          <h3 class="mt-2 text-sm font-medium text-gray-200" title="${video.title.replace(/"/g, '&quot;')}">
+            ${video.title.replace(/</g, '&lt;').replace(/>/g, '&gt;')}
+          </h3>
+        `;
+        card.addEventListener("click", () => {
+          const url = `player.html?v=${encodeURIComponent(video.videoId)}&t=${encodeURIComponent(video.title)}&lang=${encodeURIComponent(currentLang)}`;
+          window.location.href = url;
+        });
+        suggestedMoviesGrid.appendChild(card);
+        setTimeout(() => card.classList.add("loaded"), 50);
+      });
+    }
+    // Show suggestions ASAP (don’t wait for YT)
+    loadSuggestedMovies();
 
+    // 4) Basic i18n text
+    info.textContent = title;
+
+    // 5) YouTube player
+    let player, duration = 0;
     const playIconSVG = `<svg viewBox="0 0 24 24" fill="#4fd1c5" xmlns="http://www.w3.org/2000/svg"><path d="M8 5v14l11-7z"/></svg>`;
     const pauseIconSVG = `<svg viewBox="0 0 24 24" fill="#4fd1c5" xmlns="http://www.w3.org/2000/svg"><rect x="6" y="5" width="4" height="14"/><rect x="14" y="5" width="4" height="14"/></svg>`;
-    const volumeIconSVG = `<svg viewBox="0 0 24 24" fill="#4fd1c5" xmlns="http://www.w3.org/2000/svg"><path d="M3 9v6h4l5 5V4L7 9H3z"/><path d="M16.5 12c0-1.77-1-3.29-2.5-4.03v8.06A4.97 4.97 0 0 0 16.5 12z"/></svg>`;
-    const muteIconSVG = `<svg viewBox="0 0 24 24" fill="#4fd1c5" xmlns="http://www.w3.org/2000/svg"><path d="M3 9v6h4l5 5V4L7 9H3z"/><line x1="19" y1="5" x2="5" y2="19" stroke="#4fd1c5" stroke-width="2"/><line x1="5" y1="5" x2="19" y2="19" stroke="#4fd1c5" stroke-width="2"/></svg>`;
-    const maximizeIconSVG = `<svg viewBox="0 0 24 24" fill="#4fd1c5" xmlns="http://www.w3.org/2000/svg"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>`;
-    const minimizeIconSVG = `<svg viewBox="0 0 24 24" fill="#4fd1c5" xmlns="http://www.w3.org/2000/svg"><path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"/></svg>`;
-    const copyIconSVG = `<svg viewBox="0 0 24 24" fill="#4fd1c5" xmlns="http://www.w3.org/2000/svg"><path d="M3.9 12a5 5 0 0 1 5-5h3v2h-3a3 3 0 1 0 0 6h3v2h-3a5 5 0 0 1-5-5zm7-1h2v2h-2v-2zm4.1-4h-3v2h3a3 3 0 1 1 0 6h-3v2h3a5 5 0 1 0 0-10z"/></svg>`;
-    const copiedIconSVG = `<svg viewBox="0 0 24 24" fill="#4fd1c5" xmlns="http://www.w3.org/2000/svg"><path d="M9 16.2l-3.5-3.5L4 14.2 9 19l12-12-1.5-1.5z"/></svg>`;
 
-    applyLang();
-
-    if (!videoId) {
-      info.textContent = i18n[currentLang].loading;
-      playPauseBtn.disabled = true;
-    } else {
-      info.textContent = title;
+    function updatePlayPauseBtn(isPlaying) {
+      playPauseBtn.innerHTML = isPlaying ? pauseIconSVG : playIconSVG;
     }
+    function showPause() { pauseCover.classList.remove('hidden'); }
+    function hidePause() { pauseCover.classList.add('hidden'); }
 
-   // Suggested Movies (prefer cached catalog from index; fallback to a small static list)
-
-  function loadSuggestedMovies() {
-    const suggestedMoviesGrid = document.getElementById("suggestedMoviesGrid");
-    suggestedMoviesGrid.innerHTML = "";
-
-    let all = [];
-    try {
-      const catV3 = localStorage.getItem('gojo_catalog_v3');
-      const catV2 = localStorage.getItem('gojo_catalog_v2');
-      const cat = JSON.parse(catV3 || catV2 || 'null');
-      if (cat?.items?.length) {
-        all = cat.items.map(v => ({ title: v.title, videoId: v.videoId }));
-      }
-    } catch {}
-
-    if (!all.length) {
-      all = [
-        { title: "ጥላዬ (Telaye) - Full Amharic Movie 2022", videoId: "SxVyFHDyrRI" },
-        { title: "ወዳጅ (Wedaj) - Full Ethiopian Movie 2023", videoId: "phmIAGUlKVg" },
-        { title: "ወይኔ የአራዳ ልጅ 5 (Wayne Yarada Lij 5) - Full Movie 2020", videoId: "u4n1bBSWPHY" },
-        { title: "ባለ ክራር (Bale Kirar) - Ethiopian Full Movie 2024", videoId: "WIJU3F5Vrmc" }
-      ];
-    }
-
-    const suggestions = all.filter(v => v.videoId !== videoId).slice(0, 8);
-    suggestions.forEach(video => {
-      const card = document.createElement("div");
-      card.className = "video-card cursor-pointer";
-      card.innerHTML = `
-        <div class="relative" style="padding-bottom: 56.25%;">
-          <img
-            src="https://img.youtube.com/vi/${video.videoId}/hqdefault.jpg"
-            alt="${video.title.replace(/"/g, '&quot;')}"
-            loading="lazy"
-            class="absolute top-0 left-0 w-full h-full object-cover"
-          />
-          <div class="play-icon absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 pointer-events-none select-none" aria-hidden="true">
-            <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <circle cx="24" cy="24" r="22" fill="url(#grad1)" fill-opacity="0.7" />
-              <path d="M20 17L33 24L20 31V17Z" fill="white" />
-              <defs>
-                <linearGradient id="grad1" x1="0" y1="0" x2="48" y2="48" gradientUnits="userSpaceOnUse">
-                  <stop stop-color="#4fd1c5" />
-                  <stop offset="1" stop-color="#2c7a7b" />
-                </linearGradient>
-              </defs>
-            </svg>
-          </div>
-        </div>
-        <h3 class="mt-2 text-sm font-medium text-gray-200">${video.title.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</h3>
-      `;
-      card.addEventListener("click", () => {
-        const url = `player.html?v=${encodeURIComponent(video.videoId)}&t=${encodeURIComponent(video.title)}&lang=${encodeURIComponent(currentLang)}`;
-        window.location.href = url;
-      });
-      suggestedMoviesGrid.appendChild(card);
-      setTimeout(() => card.classList.add("loaded"), 50);
-    });
-  }
-
-
-  // Filter out current video, then take up to 8 suggestions
-  const suggestions = all.filter(v => v.videoId !== videoId).slice(0, 8);
-
-  suggestions.forEach(video => {
-    const card = document.createElement("div");
-    card.className = "video-card cursor-pointer";
-    card.innerHTML = `
-      <div class="relative" style="padding-bottom: 56.25%;">
-        <img
-          src="https://img.youtube.com/vi/${video.videoId}/hqdefault.jpg"
-          alt="${video.title.replace(/"/g, '&quot;')}"
-          loading="lazy"
-          class="absolute top-0 left-0 w-full h-full object-cover"
-        />
-        <div class="play-icon absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 pointer-events-none select-none" aria-hidden="true">
-          <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="24" cy="24" r="22" fill="url(#grad1)" fill-opacity="0.7" />
-            <path d="M20 17L33 24L20 31V17Z" fill="white" />
-            <defs>
-              <linearGradient id="grad1" x1="0" y1="0" x2="48" y2="48" gradientUnits="userSpaceOnUse">
-                <stop stop-color="#4fd1c5" />
-                <stop offset="1" stop-color="#2c7a7b" />
-              </linearGradient>
-            </defs>
-          </svg>
-        </div>
-      </div>
-      <h3 class="mt-2 text-sm font-medium text-gray-200">${video.title.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</h3>
-    `;
-    card.addEventListener("click", () => {
-      const url = `player.html?v=${encodeURIComponent(video.videoId)}&t=${encodeURIComponent(video.title)}&lang=${encodeURIComponent(currentLang)}`;
-      window.location.href = url;
-    });
-    suggestedMoviesGrid.appendChild(card);
-    setTimeout(() => card.classList.add("loaded"), 50);
-  });
-
-    // YT IFrame API
-    const tag = document.createElement("script");
-    tag.src = "https://www.youtube.com/iframe_api";
-    document.head.appendChild(tag);
-
-    window.onYouTubeIframeAPIReady = function() {
+    window.onYouTubeIframeAPIReady = function () {
       player = new YT.Player("player", {
-        videoId: videoId,
+        videoId,
         playerVars: {
           modestbranding: 1,
           rel: 0,
@@ -321,463 +209,68 @@
           controls: 0,
           disablekb: 1,
           fs: 1,
-          autoplay: 0, // start paused
-          playsinline: 1
+          autoplay: 0,      // start paused
+          playsinline: 1,
+          origin: location.origin
         },
         events: {
           onReady: onPlayerReady,
           onStateChange: onPlayerStateChange,
-          onError: onPlayerError,
-        },
+          onError: onPlayerError
+        }
       });
     };
+    // Load the API
+    const tag = document.createElement("script");
+    tag.src = "https://www.youtube.com/iframe_api";
+    document.head.appendChild(tag);
 
     function onPlayerReady() {
-      // Allow PiP where possible
+      // Allow PiP/autoplay after gesture
       try {
         const iframe = player.getIframe();
         iframe.setAttribute('allow', 'autoplay; encrypted-media; picture-in-picture; fullscreen');
         iframe.setAttribute('allowfullscreen', 'true');
       } catch {}
-
       duration = player.getDuration();
-
-      // Apply saved volume/mute
-      const savedVol = parseInt(localStorage.getItem('gojo_volume') || '100', 10);
-      const savedMuted = localStorage.getItem('gojo_muted') === 'true';
-      player.setVolume(isNaN(savedVol) ? 100 : savedVol);
-      volumeSlider.value = isNaN(savedVol) ? 100 : savedVol;
-      updateVolumeSliderBackground(volumeSlider.value);
-      if (savedMuted || savedVol === 0) { player.mute(); isMuted = true; } else { player.unMute(); isMuted = false; }
-      updateMuteBtnIcon();
-
-      // Apply saved speed
-      const savedSpeed = parseFloat(localStorage.getItem('gojo_speed') || '1');
-      const rates = player.getAvailablePlaybackRates ? player.getAvailablePlaybackRates() : [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
-      const initialSpeed = rates.includes(savedSpeed) ? savedSpeed : 1;
-      player.setPlaybackRate(initialSpeed);
-      updateSpeedUI(initialSpeed);
-
-      // Show overlay and resume prompt if available
-      showPauseCover();
-      let resumeAt = parseFloat(localStorage.getItem(`gojo_lastpos_${videoId}`) || '0');
-      if (startTime > 0) resumeAt = startTime;
-      if (resumeAt > 10 && (!duration || resumeAt < duration - 5)) {
-        resumeTimeEl.textContent = formatTime(resumeAt);
-        resumeBox.classList.remove('hidden');
-        resumeYes.onclick = () => { player.seekTo(resumeAt, true); player.playVideo(); hidePauseCover(); };
-        resumeNo.onclick = () => { player.seekTo(0, true); player.playVideo(); hidePauseCover(); };
-      } else {
-        resumeBox.classList.add('hidden');
-      }
-
-      loadSuggestedMovies();
-      preloadThumbnails();
-      updateTimeDisplay(0);
-      playPauseBtn.disabled = false;
+      if (startTime > 0 && startTime < duration) player.seekTo(startTime, true);
+      showPause();
+      updatePlayPauseBtn(false);
     }
 
-    function onPlayerStateChange(event) {
-      switch(event.data) {
+    function onStateChange(e) {
+      switch (e.data) {
         case YT.PlayerState.PLAYING:
+          hidePause();
           updatePlayPauseBtn(true);
-          hidePauseCover();
-          startProgressUpdater();
           break;
         case YT.PlayerState.PAUSED:
+          showPause();
           updatePlayPauseBtn(false);
-          showPauseCover();
-          stopProgressUpdater();
           break;
         case YT.PlayerState.ENDED:
+          showPause();
           updatePlayPauseBtn(false);
-          showPauseCover();
-          stopProgressUpdater();
-          updateProgressBar(100);
-          updateTimeDisplay(duration);
-          break;
-        case YT.PlayerState.UNSTARTED:
-        case YT.PlayerState.CUED:
-          updatePlayPauseBtn(false);
-          showPauseCover();
-          stopProgressUpdater();
           break;
       }
     }
-
-    function onPlayerError() {
-      info.textContent = "An error occurred while loading the video.";
-      playPauseBtn.disabled = true;
+    function onPlayerError(err) {
+      console.warn('YouTube player error', err);
     }
 
-    function updatePlayPauseBtn(isPlaying) { playPauseBtn.innerHTML = isPlaying ? pauseIconSVG : playIconSVG; }
-
-    function updateVolumeSliderBackground(value) {
-      const percentage = value;
-      const slider = volumeSlider;
-      const bg = `linear-gradient(to right, #4fd1c5 0%, #4fd1c5 ${percentage}%, #444c71 ${percentage}%, #444c71 100%)`;
-      slider.style.background = bg;
-    }
-
-    function togglePlay() {
+    // 6) Controls
+    pauseCover.addEventListener("click", () => { if (player) player.playVideo(); });
+    playPauseBtn.addEventListener("click", () => {
       if (!player) return;
-      const state = player.getPlayerState();
-      if (state === YT.PlayerState.PLAYING) {
-        player.pauseVideo();
-        showPauseCover();
-      } else {
-        player.playVideo();
-        hidePauseCover();
-      }
-    }
-
-    function toggleMute() {
-      if (!player) return;
-      if (isMuted) {
-        player.unMute(); isMuted = false;
-        volumeSlider.value = player.getVolume();
-      } else {
-        player.mute(); isMuted = true;
-        volumeSlider.value = 0;
-      }
-      localStorage.setItem('gojo_muted', isMuted ? 'true' : 'false');
-      localStorage.setItem('gojo_volume', String(volumeSlider.value));
-      updateMuteBtnIcon();
-      updateVolumeSliderBackground(volumeSlider.value);
-    }
-
-    function toggleFullscreen() {
-      const el = document.getElementById("playerContainer");
-      if (!document.fullscreenElement) {
-        const req = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen || el.msRequestFullscreen;
-        if (req) req.call(el);
-      } else {
-        const exit = document.exitFullscreen || document.webkitExitFullscreen || document.mozCancelFullScreen || document.msExitFullscreen;
-        if (exit) exit.call(document);
-      }
-    }
-
-    playPauseBtn.addEventListener("click", togglePlay);
-    muteBtn.addEventListener("click", toggleMute);
-
-    volumeSlider.addEventListener("input", (e) => {
-      if (!player) return;
-      const vol = parseInt(e.target.value, 10);
-      player.setVolume(vol);
-      localStorage.setItem('gojo_volume', String(vol));
-      if (vol === 0) { player.mute(); isMuted = true; localStorage.setItem('gojo_muted','true'); }
-      else { player.unMute(); isMuted = false; localStorage.setItem('gojo_muted','false'); }
-      updateMuteBtnIcon();
-      updateVolumeSliderBackground(vol);
+      const s = player.getPlayerState();
+      if (s === YT.PlayerState.PLAYING) player.pauseVideo();
+      else player.playVideo();
     });
 
-    function updateMuteBtnIcon() { muteBtn.innerHTML = isMuted ? muteIconSVG : volumeIconSVG; }
-
-    // Pause overlay behavior
-    function showPauseCover() {
-      overlayManuallyShown = true;
-      pauseCover.classList.remove('hidden');
-      pauseCover.setAttribute('aria-hidden', 'false');
-    }
-    function hidePauseCover() {
-      overlayManuallyShown = false;
-      pauseCover.classList.add('hidden');
-      pauseCover.setAttribute('aria-hidden', 'true');
-    }
-
-    pauseCover.addEventListener("click", () => { if (player) { player.playVideo(); hidePauseCover(); } });
-    pauseCover.addEventListener("keydown", (e) => {
-      if (e.key === "Enter" || e.key === " " || e.key === "Spacebar") {
-        e.preventDefault();
-        if (player) { player.playVideo(); hidePauseCover(); }
-      }
-    });
-
-    // Progress/seek
-    progressContainer.addEventListener("mousedown", () => { userSeeking = true; });
-    progressContainer.addEventListener("mouseup", (e) => {
-      if (!player || !duration) return;
-      const rect = progressContainer.getBoundingClientRect();
-      const clickX = e.clientX - rect.left;
-      const ratio = Math.min(Math.max(clickX / rect.width, 0), 1);
-      const seekTo = ratio * duration;
-      player.seekTo(seekTo, true);
-      updateProgressBar(ratio * 100);
-      updateTimeDisplay(seekTo);
-      userSeeking = false;
-      if (player.getPlayerState() === YT.PlayerState.PLAYING) hidePauseCover();
-    });
-
-    progressContainer.addEventListener("keydown", (e) => {
-      if (!player || !duration) return;
-      const step = 10; // seconds for arrow keys? keep earlier behavior proportional
-      let currentTime = player.getCurrentTime();
-      if (e.key === "ArrowRight" || e.key === "ArrowUp") {
-        e.preventDefault();
-        currentTime = Math.min(currentTime + step, duration);
-        player.seekTo(currentTime, true);
-      }
-      if (e.key === "ArrowLeft" || e.key === "ArrowDown") {
-        e.preventDefault();
-        currentTime = Math.max(currentTime - step, 0);
-        player.seekTo(currentTime, true);
-      }
-      updateProgressBar((currentTime / duration) * 100);
-      updateTimeDisplay(currentTime);
-      if (player.getPlayerState() === YT.PlayerState.PLAYING) hidePauseCover();
-    });
-
-    function updateProgressBar(percent) {
-      percent = Math.min(Math.max(percent, 0), 100);
-      progressBar.style.width = percent + "%";
-      progressContainer.setAttribute("aria-valuenow", percent.toFixed(0));
-    }
-
-    function updateTimeDisplay(current) {
-      current = Math.min(Math.max(current, 0), duration || 0);
-      timeDisplay.textContent = formatTime(current) + " / " + formatTime(duration || 0);
-    }
-
-    function formatTime(seconds) {
-      seconds = Math.floor(seconds || 0);
-      const mins = Math.floor(seconds / 60);
-      const secs = seconds % 60;
-      return mins + ":" + (secs < 10 ? "0" + secs : secs);
-    }
-
-    function startProgressUpdater() {
-      if (progressInterval) clearInterval(progressInterval);
-      progressInterval = setInterval(() => {
-        if (player && !userSeeking && player.getPlayerState() === YT.PlayerState.PLAYING) {
-          const current = player.getCurrentTime();
-          const percent = duration ? (current / duration) * 100 : 0;
-          updateProgressBar(percent);
-          updateTimeDisplay(current);
-          // Save last position every ~0.5s
-          const rounded = Math.floor(current);
-          if (rounded !== lastSavedTime) {
-            lastSavedTime = rounded;
-            localStorage.setItem(`gojo_lastpos_${videoId}`, String(rounded));
-          }
-        }
-      }, 500);
-    }
-
-    function stopProgressUpdater() { if (progressInterval) { clearInterval(progressInterval); progressInterval = null; } }
-
-    playerWrapper.addEventListener('mouseenter', () => {
-      clearTimeout(overlayTimeout);
-      overlayTimeout = setTimeout(() => {
-        if (!overlayManuallyShown && player && player.getPlayerState() === YT.PlayerState.PLAYING) {
-          pauseCover.classList.add('hidden');
-        }
-      }, 150);
-    });
-
-    playerWrapper.addEventListener('mouseleave', () => {
-      clearTimeout(overlayTimeout);
-      overlayTimeout = setTimeout(() => {
-        if (!pauseCover.classList.contains('hidden') && overlayManuallyShown) return;
-        if (overlayManuallyShown && player && (player.getPlayerState() === YT.PlayerState.PAUSED || player.getPlayerState() === YT.PlayerState.ENDED)) {
-          pauseCover.classList.remove('hidden');
-        }
-      }, 250);
-    });
-
-    // Thumbnails on scrub
-    const preloadedThumbs = [];
-    function preloadThumbnails() {
-      for (let i = 0; i <= 3; i++) {
-        const img = new Image();
-        img.src = `https://img.youtube.com/vi/${videoId}/${i}.jpg`;
-        preloadedThumbs[i] = img;
-      }
-    }
-
-    progressContainer.addEventListener("mousemove", (e) => {
-      clearTimeout(previewTimeout);
-      previewTimeout = setTimeout(() => {
-        if (!player || !duration) { previewThumbnail.style.display = "none"; return; }
-        const rect = progressContainer.getBoundingClientRect();
-        let x = e.clientX - rect.left;
-        x = Math.min(Math.max(x, 0), rect.width);
-        const time = (x / rect.width) * duration;
-
-        let previewX = x - previewThumbnail.offsetWidth / 2;
-        previewX = Math.min(Math.max(previewX, 0), rect.width - previewThumbnail.offsetWidth);
-        previewThumbnail.style.left = previewX + "px";
-        previewThumbnail.style.display = "block";
-
-        const percentage = time / duration;
-        let thumbnailIndex = percentage > 0.75 ? 3 : percentage > 0.5 ? 2 : percentage > 0.25 ? 1 : 0;
-        const thumbnailUrl = preloadedThumbs[thumbnailIndex]?.src || `https://img.youtube.com/vi/${videoId}/${thumbnailIndex}.jpg`;
-
-        if (previewImage.src !== thumbnailUrl) {
-          previewImage.style.opacity = '0';
-          previewImage.src = thumbnailUrl;
-          setTimeout(() => { previewImage.style.opacity = '1'; }, 50);
-        }
-      }, 100);
-    });
-
-    progressContainer.addEventListener("mouseleave", () => { previewThumbnail.style.display = "none"; });
-
-    // Back
-    backBtn.addEventListener("click", (e) => {
-      e.preventDefault();
-      try {
-        if (document.referrer && new URL(document.referrer).origin === location.origin) { history.back(); return; }
-      } catch {}
-      location.href = "index.html";
-    });
-
-    // Fullscreen
-    maximizeBtn.addEventListener("click", () => { toggleFullscreen(); });
-    document.addEventListener('fullscreenchange', () => {
-      isFullscreen = !!document.fullscreenElement;
-      maximizeBtn.innerHTML = isFullscreen ? minimizeIconSVG : maximizeIconSVG;
-      maximizeBtn.title = isFullscreen ? i18n[currentLang].exitFullscreen : i18n[currentLang].fullscreen;
-    });
-
-    // Copy link
-    copyLinkBtn.addEventListener("click", async () => {
-      const shareUrl = getShareUrl();
-      try {
-        if (navigator.clipboard && window.isSecureContext) {
-          await navigator.clipboard.writeText(shareUrl);
-        } else {
-          const temp = document.createElement('textarea');
-          temp.value = shareUrl;
-          document.body.appendChild(temp);
-          temp.select();
-          document.execCommand('copy');
-          temp.remove();
-        }
-        const original = copyLinkBtn.innerHTML;
-        copyLinkBtn.innerHTML = copiedIconSVG;
-        copyLinkBtn.title = i18n[currentLang].copied;
-        setTimeout(() => {
-          copyLinkBtn.innerHTML = copyIconSVG;
-          copyLinkBtn.title = i18n[currentLang].copyLink;
-        }, 1200);
-      } catch (err) { alert("Failed to copy link."); }
-    });
-    function getShareUrl() {
-      const current = Math.floor(player?.getCurrentTime?.() || 0);
-      const url = new URL(window.location.href);
-      url.searchParams.set('v', videoId);
-      url.searchParams.set('t', title);
-      url.searchParams.set('time', current);
-      url.searchParams.set('lang', currentLang);
-      return url.toString();
-    }
-
-    // Speed controls
-    function updateSpeedUI(rate) {
-      speedBtn.textContent = rate + "x";
-      Array.from(speedMenu.querySelectorAll('button')).forEach(b => {
-        const r = parseFloat(b.dataset.speed);
-        b.classList.toggle('active', r === rate);
-      });
-      localStorage.setItem('gojo_speed', String(rate));
-    }
-
-    speedBtn.addEventListener('click', () => {
-      speedMenu.classList.toggle('hidden');
-    });
-    document.addEventListener('click', (e) => {
-      if (!speedMenu.contains(e.target) && e.target !== speedBtn) speedMenu.classList.add('hidden');
-    });
-    speedMenu.querySelectorAll('button').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const rate = parseFloat(btn.dataset.speed);
-        player.setPlaybackRate(rate);
-        updateSpeedUI(rate);
-        speedMenu.classList.add('hidden');
-      });
-    });
-
-    function changeSpeed(delta) {
-      const rates = player.getAvailablePlaybackRates ? player.getAvailablePlaybackRates() : [0.5,0.75,1,1.25,1.5,1.75,2];
-      let current = player.getPlaybackRate ? player.getPlaybackRate() : 1;
-      let idx = rates.indexOf(current);
-      if (idx === -1) idx = rates.indexOf(1);
-      idx = Math.min(Math.max(idx + delta, 0), rates.length - 1);
-      const newRate = rates[idx];
-      player.setPlaybackRate(newRate);
-      updateSpeedUI(newRate);
-    }
-
-    // PiP
-    pipBtn.addEventListener('click', async () => {
-      try {
-        const iframe = player.getIframe();
-        if (iframe) iframe.setAttribute('allow', 'autoplay; encrypted-media; picture-in-picture; fullscreen');
-        // Programmatic PiP on YouTube iframes is typically not allowed; provide a helpful path:
-        const originalTitle = pipBtn.title;
-        pipBtn.title = "Right-click twice on the video and choose Picture in Picture";
-        // Temporarily unshield for context menu access
-        interactionShield.style.pointerEvents = 'none';
-        pauseCover.classList.add('hidden'); // hide overlay to access frame
-        setTimeout(() => {
-          interactionShield.style.pointerEvents = 'auto';
-          pipBtn.title = originalTitle;
-          if (player.getPlayerState() !== YT.PlayerState.PLAYING) pauseCover.classList.remove('hidden');
-        }, 8000);
-      } catch (e) {
-        alert("Picture-in-Picture may not be available for this embed in your browser.");
-      }
-    });
-
-    // Premium shortcuts: space/K play-pause, J/L seek, 0–9 jump%, M mute, F fullscreen, Shift+, / Shift+. speed
-    document.addEventListener('keydown', (e) => {
-      const tag = document.activeElement?.tagName;
-      if (['INPUT','TEXTAREA','SELECT'].includes(tag)) return;
-      if (e.ctrlKey || e.metaKey || e.altKey) return;
-
-      const key = e.key;
-      if (key === ' ' || key.toLowerCase() === 'k') { e.preventDefault(); togglePlay(); }
-      else if (key.toLowerCase() === 'm') { e.preventDefault(); toggleMute(); }
-      else if (key.toLowerCase() === 'f') { e.preventDefault(); toggleFullscreen(); }
-      else if (key.toLowerCase() === 'j') { e.preventDefault(); seekRelative(-10); }
-      else if (key.toLowerCase() === 'l') { e.preventDefault(); seekRelative(10); }
-      else if (key === '>' || (key === '.' && e.shiftKey)) { e.preventDefault(); changeSpeed(+1); }
-      else if (key === '<' || (key === ',' && e.shiftKey)) { e.preventDefault(); changeSpeed(-1); }
-      else if (/^[0-9]$/.test(key)) { // 0-9 to jump to % of duration
-        e.preventDefault();
-        jumpToPercent(parseInt(key,10) * 10);
-      }
-    });
-
-    function seekRelative(delta) {
-      if (!player || !duration) return;
-      const current = player.getCurrentTime();
-      let next = Math.min(Math.max(current + delta, 0), duration);
-      player.seekTo(next, true);
-      updateProgressBar((next / duration) * 100);
-      updateTimeDisplay(next);
-      if (player.getPlayerState() !== YT.PlayerState.PAUSED) hidePauseCover();
-    }
-
-    function jumpToPercent(percent) {
-      if (!player || !duration) return;
-      const t = (percent / 100) * duration;
-      player.seekTo(t, true);
-      updateProgressBar(percent);
-      updateTimeDisplay(t);
-      if (player.getPlayerState() !== YT.PlayerState.PAUSED) hidePauseCover();
-    }
-
-    // Keep language
-    localStorage.setItem('gojo_lang', currentLang);
-
-    // Save last position on unload
-    window.addEventListener('beforeunload', () => {
-      try {
-        const t = Math.floor(player?.getCurrentTime?.() || 0);
-        localStorage.setItem(`gojo_lastpos_${videoId}`, String(t));
-      } catch {}
-    });
-  </script>
+    // 7) Safety: log any blocking error early
+    window.addEventListener('error', (e) => console.error('Script error:', e.message));
+  })();
+</script>
 </body>
 </html>
+
