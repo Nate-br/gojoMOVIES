@@ -12,43 +12,79 @@
       --font-ui: "Manrope", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
       --font-amharic-sans: "Noto Sans Ethiopic", "Abyssinica SIL", "Noto Sans", sans-serif;
       --font-amharic-serif: "Noto Serif Ethiopic", "Abyssinica SIL", serif;
+      --bg-primary: #000000;
+      --bg-secondary: #111111;
+      --bg-tertiary: #1a1a1a;
+      --text-primary: #ffffff;
+      --text-secondary: #cccccc;
+      --accent-primary: #4fd1c5;
+      --accent-secondary: #8a58ee;
+      --rating-color: #ecc94b;
     }
-    body { font-family: var(--font-ui), var(--font-amharic-sans); letter-spacing: 0.1px; }
+    
+    body { 
+      font-family: var(--font-ui), var(--font-amharic-sans); 
+      letter-spacing: 0.1px;
+      background-color: var(--bg-primary);
+      color: var(--text-primary);
+    }
+    
     header .logo h1, .title-overlay, .video-card h3, h2, #featuredHeading, #suggestedHeading {
       font-family: var(--font-amharic-serif), var(--font-ui);
     }
-    button, input, #controls, .tab-button, #time-display { font-family: var(--font-ui), var(--font-amharic-sans); }
+    
+    button, input, #controls, .tab-button, #time-display { 
+      font-family: var(--font-ui), var(--font-amharic-sans); 
+    }
+    
+    header {
+      background: rgba(0, 0, 0, 0.9);
+    }
+    
+    .tabs-container {
+      background: rgba(0, 0, 0, 0.9);
+    }
+    
+    .tab-button {
+      background: #1a1a1a;
+    }
+    
+    .tab-button.active {
+      background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
+      color: #000000;
+    }
+    
+    .video-card {
+      background: linear-gradient(135deg, #151515, #252525);
+      border: 1px solid #333;
+    }
+    
+    footer {
+      background: #000;
+      color: #999;
+    }
     
     /* Star Rating System */
-    .rating-container {
-      display: flex;
-      align-items: center;
-      margin: 0.5rem 1.2rem;
-      gap: 6px;
-    }
-    .stars {
-      display: flex;
-      gap: 2px;
-    }
-    .star {
+    .rating-star {
       width: 16px;
       height: 16px;
       cursor: pointer;
-      transition: transform 0.1s;
+      margin-left: 1.2rem;
+      margin-top: -0.5rem;
+      margin-bottom: 0.5rem;
+      transition: transform 0.2s;
+      filter: drop-shadow(0 0 2px rgba(0,0,0,0.5));
     }
-    .star:hover {
+    
+    .rating-star:hover {
       transform: scale(1.2);
     }
-    .rating-text {
-      font-size: 0.75rem;
-      color: #a3bffa;
-      margin-left: 4px;
-    }
+    
     .video-card .rating-overlay {
       position: absolute;
       top: 8px;
       right: 8px;
-      background: rgba(15, 17, 26, 0.85);
+      background: rgba(0, 0, 0, 0.75);
       border-radius: 12px;
       padding: 3px 6px;
       display: flex;
@@ -58,23 +94,26 @@
       border: 1px solid rgba(79, 209, 197, 0.3);
       z-index: 5;
     }
+    
     .video-card .rating-overlay .star-icon {
       width: 12px;
       height: 12px;
-      fill: #ecc94b;
+      fill: var(--rating-color);
     }
+    
     .video-card .rating-overlay .rating-value {
       font-size: 0.7rem;
       font-weight: 600;
-      color: #ecc94b;
+      color: var(--rating-color);
     }
+    
     .rating-modal {
       position: fixed;
       top: 0;
       left: 0;
       width: 100%;
       height: 100%;
-      background: rgba(15, 17, 26, 0.9);
+      background: rgba(0, 0, 0, 0.9);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -84,12 +123,14 @@
       pointer-events: none;
       transition: opacity 0.3s;
     }
+    
     .rating-modal.active {
       opacity: 1;
       pointer-events: auto;
     }
+    
     .rating-modal-content {
-      background: #222b4d;
+      background: #111;
       border-radius: 16px;
       border: 1px solid rgba(79, 209, 197, 0.5);
       padding: 1.5rem;
@@ -98,27 +139,32 @@
       text-align: center;
       box-shadow: 0 0 20px rgba(79, 209, 197, 0.2);
     }
+    
     .rating-modal-stars {
       display: flex;
       justify-content: center;
       gap: 8px;
       margin: 1rem 0;
     }
+    
     .rating-modal-stars .star {
       width: 32px;
       height: 32px;
     }
+    
     .rating-modal-title {
       font-size: 1.1rem;
       margin-bottom: 1rem;
-      color: #f0f4ff;
+      color: var(--text-primary);
     }
+    
     .rating-modal-actions {
       display: flex;
       justify-content: center;
       gap: 12px;
       margin-top: 1.5rem;
     }
+    
     .rating-modal-btn {
       padding: 0.5rem 1rem;
       border-radius: 12px;
@@ -126,14 +172,25 @@
       cursor: pointer;
       border: 1px solid transparent;
     }
+    
     .rating-modal-btn.submit {
-      background: linear-gradient(90deg, #4fd1c5, #8a58ee);
-      color: #0f111a;
+      background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
+      color: #000;
     }
+    
     .rating-modal-btn.cancel {
       background: rgba(255, 255, 255, 0.1);
       border-color: rgba(255, 255, 255, 0.2);
-      color: #cbd5e1;
+      color: #ccc;
+    }
+    
+    /* Override styles from style.css */
+    body::before {
+      opacity: 0.15;
+    }
+    
+    .hero-section .background-overlay {
+      background: linear-gradient(120deg, rgba(79, 209, 197, 0.05), rgba(147, 104, 255, 0.08));
     }
   </style>
 </head>
@@ -153,7 +210,7 @@
       <input id="searchInput" type="text" placeholder="Search movies..." aria-label="Search movies" />
       <button id="refreshBtn" aria-label="Refresh catalog" title="Refresh catalog">
         <svg viewBox="0 0 24 24" width="18" height="18" xmlns="http://www.w3.org/2000/svg">
-          <path fill="#0f111a" d="M17.65 6.35A7.95 7.95 0 0 0 12 4V1L7 6l5 5V7a5 5 0 1 1-4.9 6h-2.1a7 7 0 1 0 12.65-6.65z"/>
+          <path fill="#ffffff" d="M17.65 6.35A7.95 7.95 0 0 0 12 4V1L7 6l5 5V7a5 5 0 1 1-4.9 6h-2.1a7 7 0 1 0 12.65-6.65z"/>
         </svg>
       </button>
       <button id="langToggle">EN</button>
@@ -265,12 +322,31 @@
     let currentRatingVideoId = '';
     const ratings = JSON.parse(localStorage.getItem(RATINGS_KEY) || '{}');
     
-    function getAverageRating(videoId) {
-      if (!videoId || !ratings[videoId]) return 0;
-      const movieRatings = ratings[videoId];
-      if (!movieRatings.length) return 0;
-      const sum = movieRatings.reduce((a, b) => a + b, 0);
-      return sum / movieRatings.length;
+    // Calculate rating based on views
+    function calculateRatingFromViews(viewCount) {
+      if (!viewCount) return 0;
+      // Convert viewCount to a rating between 0-5
+      // More views = higher initial rating
+      if (viewCount >= 1000000) return 4.5; // 1M+ views
+      if (viewCount >= 500000) return 4.2;  // 500K+ views
+      if (viewCount >= 100000) return 3.8;  // 100K+ views
+      if (viewCount >= 50000) return 3.5;   // 50K+ views
+      if (viewCount >= 10000) return 3.0;   // 10K+ views
+      if (viewCount >= 5000) return 2.5;    // 5K+ views
+      if (viewCount >= 1000) return 2.0;    // 1K+ views
+      return 1.0;                           // <1K views
+    }
+    
+    function getAverageRating(videoId, viewCount) {
+      // If we have user ratings, use those
+      if (videoId && ratings[videoId] && ratings[videoId].length > 0) {
+        const movieRatings = ratings[videoId];
+        const sum = movieRatings.reduce((a, b) => a + b, 0);
+        return sum / movieRatings.length;
+      }
+      
+      // Otherwise calculate from view count
+      return calculateRatingFromViews(viewCount);
     }
     
     function saveRating(videoId, rating) {
@@ -372,8 +448,7 @@
           "most-viewed": "Most Viewed" 
         },
         search: "Search movies...",
-        rating: "Rating",
-        rateThis: "Rate this"
+        rateThis: "Rate this movie"
       },
       AM: {
         featured: "የተመረጠ ፊልም",
@@ -384,7 +459,6 @@
           "most-viewed": "በጣም የታዩ" 
         },
         search: "ፊልሞችን ፈልግ...",
-        rating: "ደረጃ",
         rateThis: "ደረጃ ይስጡ"
       }
     };
@@ -426,9 +500,6 @@
         if (h2) h2.textContent = dict.tabs[section.id];
       });
       document.querySelector('.rating-modal-title').textContent = dict.rateThis;
-      document.querySelectorAll('.rating-text').forEach(el => {
-        el.textContent = dict.rating;
-      });
     }
     applyLanguage(currentLang);
     document.getElementById('langToggle').addEventListener('click', () => {
@@ -448,9 +519,18 @@
       // For top-rated category, sort by ratings
       if (category === 'top-rated') {
         filtered.sort((a, b) => {
-          const ratingA = getAverageRating(a.videoId) || 0;
-          const ratingB = getAverageRating(b.videoId) || 0;
+          const ratingA = getAverageRating(a.videoId, a.viewCount) || 0;
+          const ratingB = getAverageRating(b.videoId, b.viewCount) || 0;
           return ratingB - ratingA;
+        });
+      }
+      
+      // For most-viewed category, sort by view count
+      if (category === 'most-viewed') {
+        filtered.sort((a, b) => {
+          const viewsA = a.viewCount || 0;
+          const viewsB = b.viewCount || 0;
+          return viewsB - viewsA;
         });
       }
       
@@ -459,7 +539,7 @@
         videoCard.className = "video-card cursor-pointer";
         videoCard.setAttribute('data-video-id', video.videoId);
         const cleanTitle = cleanMovieTitle(video.title);
-        const avgRating = getAverageRating(video.videoId);
+        const avgRating = getAverageRating(video.videoId, video.viewCount);
         
         videoCard.innerHTML = `
           <div class="relative" style="padding-bottom: 56.25%;">
@@ -486,24 +566,19 @@
           <h3 title="${cleanTitle.replace(/"/g, '&quot;')}">
             ${cleanTitle.replace(/</g, '&lt;').replace(/>/g, '&gt;')}
           </h3>
-          <div class="rating-container">
-            <button class="rate-btn" aria-label="Rate this movie">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="#4fd1c5" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
-              </svg>
-            </button>
-            <span class="rating-text">${i18n[currentLang].rating}</span>
-          </div>
+          <svg class="rating-star" viewBox="0 0 24 24" fill="#4fd1c5" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
+          </svg>
         `;
         
         // Set up event listeners
-        videoCard.querySelector('.rate-btn').addEventListener('click', (e) => {
+        videoCard.querySelector('.rating-star').addEventListener('click', (e) => {
           e.stopPropagation(); // Prevent navigation to player
           openRatingModal(video.videoId, cleanTitle);
         });
         
         videoCard.addEventListener("click", (e) => {
-          if (e.target.closest('.rate-btn')) return; // Don't navigate if clicking rating button
+          if (e.target.closest('.rating-star')) return; // Don't navigate if clicking rating button
           window.location.href = `player.html?v=${encodeURIComponent(video.videoId)}&t=${encodeURIComponent(cleanTitle)}&lang=${encodeURIComponent(currentLang)}`;
         });
         
@@ -554,10 +629,10 @@
     // Hero rotation (New Releases only)
     let heroIndex = 0;
     let heroItems = [
-      { videoId: "SxVyFHDyrRI", title: "ጥላዬ (Telaye) - Full Amharic Movie 2022" },
-      { videoId: "phmIAGUlKVg", title: "ወዳጅ (Wedaj) - Full Ethiopian Movie 2023" },
-      { videoId: "u4n1bBSWPHY", title: "ወይኔ የአራዳ ልጅ 5 (Wayne Yarada Lij 5) - Full Movie 2020" },
-      { videoId: "WIJU3F5Vrmc", title: "ባለ ክራር (Bale Kirar) - Ethiopian Full Movie 2024" }
+      { videoId: "SxVyFHDyrRI", title: "ጥላዬ (Telaye) - Full Amharic Movie 2022", viewCount: 50000 },
+      { videoId: "phmIAGUlKVg", title: "ወዳጅ (Wedaj) - Full Ethiopian Movie 2023", viewCount: 75000 },
+      { videoId: "u4n1bBSWPHY", title: "ወይኔ የአራዳ ልጅ 5 (Wayne Yarada Lij 5) - Full Movie 2020", viewCount: 120000 },
+      { videoId: "WIJU3F5Vrmc", title: "ባለ ክራር (Bale Kirar) - Ethiopian Full Movie 2024", viewCount: 40000 }
     ];
     function applyHeroFromCatalog(cat) {
       const newRel = cat?.categories?.['new-releases'] || [];
@@ -604,11 +679,26 @@
       const classicsData = cat.categories?.['classics'] || []; // use classics as most-viewed
       const trendingData = cat.categories?.['trending'] || []; // use trending as top-rated
       
+      // Include view counts in data
+      const items = cat.items || [];
+      const viewCountMap = {};
+      items.forEach(item => {
+        if (item.videoId && item.viewCount) {
+          viewCountMap[item.videoId] = item.viewCount;
+        }
+      });
+      
+      // Add view count to each movie
+      const enrichWithViewCount = (data) => data.map(v => ({
+        ...v,
+        viewCount: viewCountMap[v.videoId] || Math.floor(Math.random() * 100000) // Use random views as fallback
+      }));
+      
       // Map data to our new categories
-      movieVideos.push(...newReleasesData.map(v => ({ ...v, category: 'new-releases' })));
-      movieVideos.push(...popularData.map(v => ({ ...v, category: 'popular' })));
-      movieVideos.push(...trendingData.map(v => ({ ...v, category: 'top-rated' })));
-      movieVideos.push(...classicsData.map(v => ({ ...v, category: 'most-viewed' })));
+      movieVideos.push(...enrichWithViewCount(newReleasesData).map(v => ({ ...v, category: 'new-releases' })));
+      movieVideos.push(...enrichWithViewCount(popularData).map(v => ({ ...v, category: 'popular' })));
+      movieVideos.push(...enrichWithViewCount(trendingData).map(v => ({ ...v, category: 'top-rated' })));
+      movieVideos.push(...enrichWithViewCount(classicsData).map(v => ({ ...v, category: 'most-viewed' })));
       
       // Ensure we have data for all categories
       ['new-releases', 'popular', 'top-rated', 'most-viewed'].forEach(loadVideos);
@@ -618,6 +708,12 @@
     // Fallback so UI is never empty
     const FALLBACK_CATALOG = {
       fetchedAt: Date.now(),
+      items: [
+        { title: "ጥላዬ (Telaye) - Full Amharic Movie 2022", videoId: "SxVyFHDyrRI", viewCount: 50000 },
+        { title: "ባለ ክራር (Bale Kirar) - Ethiopian Full Movie 2024", videoId: "WIJU3F5Vrmc", viewCount: 40000 },
+        { title: "ወዳጅ (Wedaj) - Full Ethiopian Movie 2023", videoId: "phmIAGUlKVg", viewCount: 75000 },
+        { title: "ወይኔ የአራዳ ልጅ 5 (Wayne Yarada Lij 5) - Full Movie 2020", videoId: "u4n1bBSWPHY", viewCount: 120000 }
+      ],
       categories: {
         'new-releases': [
           { title: "ጥላዬ (Telaye) - Full Amharic Movie 2022", videoId: "SxVyFHDyrRI" },
@@ -652,7 +748,7 @@
       const original = btn.innerHTML;
       try {
         btn.disabled = true;
-        btn.innerHTML = `<svg class="spinner" viewBox="0 0 24 24" width="18" height="18" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="9" stroke="#0f111a" stroke-width="3" fill="none" stroke-linecap="round" stroke-dasharray="42"/></svg>`;
+        btn.innerHTML = `<svg class="spinner" viewBox="0 0 24 24" width="18" height="18" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="9" stroke="#ffffff" stroke-width="3" fill="none" stroke-linecap="round" stroke-dasharray="42"/></svg>`;
         const url = force ? `${CATALOG_ENDPOINT}?force=1` : CATALOG_ENDPOINT;
         const res = await fetch(url, { cache: force ? 'no-store' : 'default' });
         if (!res.ok) throw new Error('Fetch failed');
