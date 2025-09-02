@@ -3,8 +3,20 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Gojo Films - Player</title>
+  <title>ጎጆ films - Player</title>
   <link rel="stylesheet" href="style.css" />
+  <!-- Fonts: Manrope (UI), Noto Ethiopic (Amharic), Abyssinica SIL fallback -->
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=Noto+Sans+Ethiopic:wght@400;600;700&family=Noto+Serif+Ethiopic:wght@600;700&family=Abyssinica+SIL:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --font-ui: "Manrope", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+      --font-amharic-sans: "Noto Sans Ethiopic", "Abyssinica SIL", "Noto Sans", sans-serif;
+      --font-amharic-serif: "Noto Serif Ethiopic", "Abyssinica SIL", serif;
+    }
+    body { font-family: var(--font-ui), var(--font-amharic-sans); letter-spacing: 0.1px; }
+    #info, #suggestedHeading, .video-card h3 { font-family: var(--font-amharic-serif), var(--font-ui); }
+    button, input, #controls, #time-display { font-family: var(--font-ui), var(--font-amharic-sans); }
+  </style>
 </head>
 <body>
   <div id="info" aria-live="polite" aria-atomic="true">Loading...</div>
@@ -15,11 +27,11 @@
     <div id="playerContainer" aria-label="YouTube video player container">
       <div id="player" role="region" aria-live="off" aria-atomic="true"></div>
 
-      <!-- Subtle gradient masks to soften YT UI edges -->
+      <!-- Subtle gradient masks -->
       <div class="branding-cover-overlay" aria-hidden="true"></div>
       <div class="top-branding-cover" aria-hidden="true"></div>
 
-      <!-- Interaction shield (captures clicks so YT UI doesn't) -->
+      <!-- Interaction shield -->
       <div id="interactionShield" aria-hidden="true" title="Interaction Shield"></div>
 
       <!-- Pause overlay (visible first) -->
@@ -218,7 +230,6 @@
       }
       function updateMuteBtnIcon() { muteBtn.innerHTML = isMuted ? muteIconSVG : volumeIconSVG; }
 
-      // Play with fallback (mute-then-play)
       function ensurePlay() {
         if (!player) return;
         try { player.playVideo(); } catch {}
@@ -231,7 +242,6 @@
         updatePlayPauseBtn(true);
       }
 
-      // YouTube API
       window.onYouTubeIframeAPIReady = function () {
         player = new YT.Player("player", {
           videoId,
@@ -262,7 +272,6 @@
         showPause();
         updatePlayPauseBtn(false);
 
-        // restore volume
         const savedVol = parseInt(localStorage.getItem('gojo_volume') || '100', 10);
         const savedMuted = localStorage.getItem('gojo_muted') === 'true';
         player.setVolume(isNaN(savedVol) ? 100 : savedVol);
@@ -313,7 +322,6 @@
             break;
         }
       }
-
       function onPlayerError(err) {
         console.warn('YouTube player error', err);
         showPause();
@@ -458,7 +466,7 @@
       });
       progressContainer.addEventListener("mouseleave", () => { previewThumbnail.style.display = "none"; });
 
-      // Speed menu
+      // Speed
       function updateSpeedUI(rate) {
         speedBtn.textContent = rate + "x";
         Array.from(speedMenu.querySelectorAll('button')).forEach(b => {
@@ -564,7 +572,7 @@
         hidePause();
       }
 
-      // Safety logging
+      // Safety log
       window.addEventListener('error', (e) => console.error('Script error:', e.message));
     })();
   </script>
