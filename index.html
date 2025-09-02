@@ -3,14 +3,28 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Gojo Films</title>
+  <title>ጎጆ films</title>
   <link rel="stylesheet" href="style.css" />
+  <!-- Fonts: Manrope (UI), Noto Ethiopic (Amharic), Abyssinica SIL fallback -->
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=Noto+Sans+Ethiopic:wght@400;600;700&family=Noto+Serif+Ethiopic:wght@600;700&family=Abyssinica+SIL:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --font-ui: "Manrope", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+      --font-amharic-sans: "Noto Sans Ethiopic", "Abyssinica SIL", "Noto Sans", sans-serif;
+      --font-amharic-serif: "Noto Serif Ethiopic", "Abyssinica SIL", serif;
+    }
+    body { font-family: var(--font-ui), var(--font-amharic-sans); letter-spacing: 0.1px; }
+    header .logo h1, .title-overlay, .video-card h3, h2, #featuredHeading, #suggestedHeading {
+      font-family: var(--font-amharic-serif), var(--font-ui);
+    }
+    button, input, #controls, .tab-button, #time-display { font-family: var(--font-ui), var(--font-amharic-sans); }
+  </style>
 </head>
 <body>
   <header>
     <div class="logo">
       <div class="circle-icon">ጎ</div>
-      <h1>Gojo Films</h1>
+      <h1>ጎጆ films</h1>
     </div>
     <div class="header-controls">
       <span id="searchIcon" role="button" tabindex="0" aria-label="Search">
@@ -80,11 +94,11 @@
   </main>
 
   <footer>
-    <p>&copy; 2025 Gojo Films. All rights reserved. | <a href="#">Privacy Policy</a> | <a href="#">Terms of Service</a></p>
+    <p>&copy; 2025 ጎጆ films. All rights reserved. | <a href="#">Privacy Policy</a> | <a href="#">Terms of Service</a></p>
   </footer>
 
   <script>
-    // Endpoint and cache settings
+    // Endpoint and cache
     const CATALOG_ENDPOINT = `${location.origin}/api/catalog`;
     const CATALOG_KEY = 'gojo_catalog_v3';
     const API_TTL_MS = 6 * 60 * 60 * 1000;
@@ -106,7 +120,7 @@
     // Tabs
     const tabs = document.querySelectorAll('.tab-button');
     const sections = document.querySelectorAll('.video-section');
-    sections.forEach(section => { section.hidden = !section.classList.contains('active'); });
+    sections.forEach(s => { s.hidden = !s.classList.contains('active'); });
     tabs.forEach(tab => {
       tab.addEventListener('click', () => {
         const targetId = tab.getAttribute('aria-controls');
@@ -148,7 +162,7 @@
     });
 
     // Grid rendering
-    let movieVideos = []; // flattened
+    let movieVideos = [];
     function loadVideos(category) {
       const grid = document.getElementById(`${category}-grid`);
       grid.innerHTML = "";
@@ -208,7 +222,7 @@
       });
     });
 
-    // Catalog cache helpers
+    // Cache helpers
     function getCachedCatalog() {
       try {
         const raw = localStorage.getItem(CATALOG_KEY);
@@ -317,7 +331,6 @@
         if (!res.ok) throw new Error('Fetch failed');
         const cat = await res.json();
         if (!cat?.categories || isCatalogEmpty(cat)) {
-          console.warn('Catalog empty, using fallback');
           setFromFallback();
           return FALLBACK_CATALOG;
         }
@@ -325,7 +338,6 @@
         setFromCatalog(cat);
         return cat;
       } catch (e) {
-        console.warn('Catalog fetch failed; using fallback', e);
         const raw = localStorage.getItem(CATALOG_KEY);
         if (raw) {
           try {
