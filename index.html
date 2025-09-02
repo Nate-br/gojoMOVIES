@@ -4,7 +4,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>ጎጆ films</title>
-  <link rel="stylesheet" href="style.css" />
   <!-- Fonts: Inter (UI), Noto Ethiopic (Amharic), Abyssinica SIL fallback -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Ethiopic:wght@400;600;700&family=Noto+Serif+Ethiopic:wght@600;700&family=Abyssinica+SIL:wght@400;700&display=swap" rel="stylesheet">
   <style>
@@ -13,16 +12,16 @@
       --font-amharic-sans: "Noto Sans Ethiopic", "Abyssinica SIL", "Noto Sans", sans-serif;
       --font-amharic-serif: "Noto Serif Ethiopic", "Abyssinica SIL", serif;
       
-      /* Professional dark cinema theme */
+      /* Professional unified dark theme */
       --bg-primary: #0a0a0a;
-      --bg-secondary: #121212;
-      --bg-tertiary: #1a1a1a;
-      --bg-card: #141414;
+      --bg-secondary: #141414;
+      --bg-tertiary: #181818;
+      --bg-card: #202020;
       --text-primary: #ffffff;
       --text-secondary: #e0e0e0;
-      --text-tertiary: #a0a0a0;
+      --text-tertiary: #b3b3b3;
       --accent-primary: #e50914;  /* Netflix red */
-      --accent-secondary: #564d65; /* Subtle purple */
+      --accent-secondary: #ff2d20; /* Lighter red */
       --accent-tertiary: #FFC107;  /* Gold for ratings */
       --border-subtle: rgba(255, 255, 255, 0.1);
       --shadow-subtle: 0 4px 12px rgba(0, 0, 0, 0.2);
@@ -87,6 +86,7 @@
       justify-content: space-between;
       align-items: center;
       transition: background 0.3s ease;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
     }
     
     header.scrolled {
@@ -110,30 +110,33 @@
       display: flex;
       justify-content: center;
       align-items: center;
-      box-shadow: 0 0 15px rgba(229, 9, 20, 0.4);
+      box-shadow: 0 0 15px rgba(229, 9, 20, 0.3);
       user-select: none;
     }
     
     header .logo h1 {
       font-size: 1.75rem;
       font-weight: 700;
-      background: linear-gradient(90deg, var(--accent-primary), #ff6b6b);
-      -webkit-background-clip: text;
-      background-clip: text;
-      color: transparent;
+      color: var(--text-primary);
       user-select: none;
+      position: relative;
     }
     
     .header-controls {
       display: flex;
       align-items: center;
       gap: 1.25rem;
+      position: relative;
     }
     
     /* Search */
     #searchIcon {
       position: relative;
-      padding: 0.6rem;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       border-radius: 50%;
       background: rgba(255, 255, 255, 0.1);
       color: var(--text-primary);
@@ -190,18 +193,18 @@
     }
     
     .btn-primary:hover {
-      background: #f81d28;
+      background: var(--accent-secondary);
       transform: translateY(-1px);
     }
     
     .btn-secondary {
-      background: transparent;
-      border: 1px solid var(--accent-primary);
-      color: var(--accent-primary);
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: var(--text-primary);
     }
     
     .btn-secondary:hover {
-      background: rgba(229, 9, 20, 0.1);
+      background: rgba(255, 255, 255, 0.12);
       transform: translateY(-1px);
     }
     
@@ -222,7 +225,8 @@
     }
     
     #refreshBtn {
-      padding: 0.6rem;
+      width: 40px;
+      height: 40px;
       border-radius: 50%;
       border: none;
       background: rgba(255, 255, 255, 0.1);
@@ -259,7 +263,7 @@
       max-height: 80vh;
       margin: 0 auto;
       margin-top: 60px;
-      border-radius: 12px;
+      border-radius: 8px;
       overflow: hidden;
     }
     
@@ -310,16 +314,20 @@
       top: 70px;
       z-index: 50;
       display: flex;
-      justify-content: flex-start;
+      justify-content: center;
       gap: 0.5rem;
       margin: 2rem 0;
-      padding: 0.75rem 0;
+      padding: 0.75rem 1.5rem;
       width: 100%;
+      max-width: 1200px;
+      margin-left: auto;
+      margin-right: auto;
       backdrop-filter: blur(10px);
       -webkit-backdrop-filter: blur(10px);
       overflow-x: auto;
       scrollbar-width: none;
       background: linear-gradient(180deg, rgba(10,10,10,0.9) 0%, rgba(10,10,10,0.5) 100%);
+      box-sizing: border-box;
     }
     
     .tabs-container::-webkit-scrollbar {
@@ -358,6 +366,9 @@
       transform: translateY(20px);
       transition: all 0.5s ease;
       pointer-events: none;
+      max-width: 1200px;
+      margin-left: auto;
+      margin-right: auto;
     }
     
     .video-section.active {
@@ -390,7 +401,7 @@
     .video-card {
       position: relative;
       background: var(--bg-card);
-      border-radius: 8px;
+      border-radius: 4px;
       overflow: hidden;
       transition: transform 0.25s ease-out, box-shadow 0.25s ease-out;
       box-shadow: var(--shadow-subtle);
@@ -497,7 +508,7 @@
     
     .pagination-btn {
       padding: 0.5rem 1rem;
-      border-radius: 6px;
+      border-radius: 4px;
       background: var(--bg-tertiary);
       color: var(--text-secondary);
       border: 1px solid var(--border-subtle);
@@ -552,7 +563,7 @@
     
     .rating-modal-content {
       background: var(--bg-secondary);
-      border-radius: 12px;
+      border-radius: 8px;
       padding: 2rem;
       max-width: 90%;
       width: 450px;
@@ -693,6 +704,10 @@
       .hero-description {
         font-size: 1rem;
         max-width: 100%;
+      }
+      
+      .tabs-container {
+        padding: 0.75rem 1rem;
       }
     }
   </style>
@@ -1462,7 +1477,8 @@
           metadataMap[item.videoId] = {
             viewCount: item.viewCount || Math.floor(Math.random() * 100000),
             publishedAt: item.publishedAt || Date.now(),
-            durationSec: item.durationSec
+            durationSec: item.durationSec,
+            categories: item.categories || []
           };
         }
       });
@@ -1489,11 +1505,14 @@
           // Get metadata for this video
           const metadata = metadataMap[item.videoId] || {
             viewCount: Math.floor(Math.random() * 100000),
-            publishedAt: Date.now()
+            publishedAt: Date.now(),
+            categories: []
           };
           
           // Determine content categories based on title
-          const contentCategories = categorizeByTitle(item.title);
+          const contentCategories = metadata.categories?.length 
+            ? metadata.categories 
+            : categorizeByTitle(item.title);
           
           // Create enriched video object
           const enrichedVideo = {
@@ -1537,7 +1556,7 @@
       }
     }
 
-    // Fallback catalog with improved data
+    // Expanded fallback catalog with more movies
     const FALLBACK_CATALOG = {
       fetchedAt: Date.now(),
       items: [
@@ -1574,38 +1593,115 @@
           videoId: "pWYWcpbIKZ4", 
           viewCount: 125674, 
           publishedAt: Date.now() - (45 * 24 * 60 * 60 * 1000),
-          durationSec: 5400
+          durationSec: 5400,
+          categories: ["dramas"]
         },
         { 
           title: "የኮሜዲ አዋጪ - Ethiopian Comedy Movie", 
           videoId: "pJ7Gk6UdtJM", 
           viewCount: 238541, 
           publishedAt: Date.now() - (20 * 24 * 60 * 60 * 1000),
-          durationSec: 6200
+          durationSec: 6200,
+          categories: ["comedies"]
+        },
+        { 
+          title: "ፍቅር ቃል - Fikir Kal Ethiopian Movie", 
+          videoId: "QM-9NY8BFQU", 
+          viewCount: 345218, 
+          publishedAt: Date.now() - (75 * 24 * 60 * 60 * 1000),
+          durationSec: 6500,
+          categories: ["dramas"]
+        },
+        { 
+          title: "ተውኔት - Tewinet Full Ethiopian Movie", 
+          videoId: "9Iq6EPu7tFU", 
+          viewCount: 156390, 
+          publishedAt: Date.now() - (120 * 24 * 60 * 60 * 1000),
+          durationSec: 7200
+        },
+        { 
+          title: "አሌክስ - Alex New Ethiopian Movie", 
+          videoId: "uLSqvvCS9OU", 
+          viewCount: 526840, 
+          publishedAt: Date.now() - (60 * 24 * 60 * 60 * 1000),
+          durationSec: 6900
+        },
+        { 
+          title: "ምርጫ - Mircha Ethiopian Movie", 
+          videoId: "oAiYvE9MYVU", 
+          viewCount: 412367, 
+          publishedAt: Date.now() - (40 * 24 * 60 * 60 * 1000),
+          durationSec: 6800
+        },
+        { 
+          title: "ቁስል - Kusil Ethiopian Movie", 
+          videoId: "Bd2MZ7e4p7s", 
+          viewCount: 187569, 
+          publishedAt: Date.now() - (95 * 24 * 60 * 60 * 1000),
+          durationSec: 7300
+        },
+        { 
+          title: "ሰማይ ነው - Semay New Ethiopian Movie", 
+          videoId: "1xhBnFAXZ2Q", 
+          viewCount: 298745, 
+          publishedAt: Date.now() - (15 * 24 * 60 * 60 * 1000),
+          durationSec: 7000
+        },
+        { 
+          title: "ሰይጣን ተጫወተብኝ - Ethiopian Comedy", 
+          videoId: "6dVjd-2SZ0Q", 
+          viewCount: 354120, 
+          publishedAt: Date.now() - (25 * 24 * 60 * 60 * 1000),
+          durationSec: 5800,
+          categories: ["comedies"]
+        },
+        { 
+          title: "ሙሉ ፊልም - Mulu Film Ethiopian Full Movie 2024", 
+          videoId: "mCp3LNoL4Jk", 
+          viewCount: 120560, 
+          publishedAt: Date.now() - (5 * 24 * 60 * 60 * 1000),
+          durationSec: 7500
+        },
+        { 
+          title: "ትዕግስት - Tigist Ethiopian Full Movie", 
+          videoId: "kV_2lWDiGL4", 
+          viewCount: 287436, 
+          publishedAt: Date.now() - (55 * 24 * 60 * 60 * 1000),
+          durationSec: 6700
         }
       ],
       categories: {
         'new-releases': [
           { title: "ጥላዬ (Telaye) - Full Amharic Movie 2022", videoId: "SxVyFHDyrRI" },
-          { title: "ባለ ክራር (Bale Kirar) - Ethiopian Full Movie 2024", videoId: "WIJU3F5Vrmc" }
+          { title: "ባለ ክራር (Bale Kirar) - Ethiopian Full Movie 2024", videoId: "WIJU3F5Vrmc" },
+          { title: "ሰማይ ነው - Semay New Ethiopian Movie", videoId: "1xhBnFAXZ2Q" },
+          { title: "ሙሉ ፊልም - Mulu Film Ethiopian Full Movie 2024", videoId: "mCp3LNoL4Jk" }
         ],
         'popular': [
           { title: "ወዳጅ (Wedaj) - Full Ethiopian Movie 2023", videoId: "phmIAGUlKVg" },
-          { title: "የኮሜዲ አዋጪ - Ethiopian Comedy Movie", videoId: "pJ7Gk6UdtJM" }
+          { title: "የኮሜዲ አዋጪ - Ethiopian Comedy Movie", videoId: "pJ7Gk6UdtJM" },
+          { title: "አሌክስ - Alex New Ethiopian Movie", videoId: "uLSqvvCS9OU" },
+          { title: "ሰይጣን ተጫወተብኝ - Ethiopian Comedy", videoId: "6dVjd-2SZ0Q" }
         ],
         'trending': [
           { title: "ወይኔ የአራዳ ልጅ 5 (Wayne Yarada Lij 5) - Full Movie 2020", videoId: "u4n1bBSWPHY" },
-          { title: "ድራማ - የምር ፍቅር Ethiopian Drama", videoId: "pWYWcpbIKZ4" }
+          { title: "ድራማ - የምር ፍቅር Ethiopian Drama", videoId: "pWYWcpbIKZ4" },
+          { title: "ምርጫ - Mircha Ethiopian Movie", videoId: "oAiYvE9MYVU" },
+          { title: "ትዕግስት - Tigist Ethiopian Full Movie", videoId: "kV_2lWDiGL4" }
         ],
         'classics': [
           { title: "ባለ ክራር (Bale Kirar) - Ethiopian Full Movie 2024", videoId: "WIJU3F5Vrmc" },
-          { title: "ወይኔ የአራዳ ልጅ 5 (Wayne Yarada Lij 5) - Full Movie 2020", videoId: "u4n1bBSWPHY" }
+          { title: "ወይኔ የአራዳ ልጅ 5 (Wayne Yarada Lij 5) - Full Movie 2020", videoId: "u4n1bBSWPHY" },
+          { title: "ተውኔት - Tewinet Full Ethiopian Movie", videoId: "9Iq6EPu7tFU" },
+          { title: "ቁስል - Kusil Ethiopian Movie", videoId: "Bd2MZ7e4p7s" }
         ],
         'comedies': [
-          { title: "የኮሜዲ አዋጪ - Ethiopian Comedy Movie", videoId: "pJ7Gk6UdtJM" }
+          { title: "የኮሜዲ አዋጪ - Ethiopian Comedy Movie", videoId: "pJ7Gk6UdtJM" },
+          { title: "ሰይጣን ተጫወተብኝ - Ethiopian Comedy", videoId: "6dVjd-2SZ0Q" }
         ],
         'dramas': [
-          { title: "ድራማ - የምር ፍቅር Ethiopian Drama", videoId: "pWYWcpbIKZ4" }
+          { title: "ድራማ - የምር ፍቅር Ethiopian Drama", videoId: "pWYWcpbIKZ4" },
+          { title: "ፍቅር ቃል - Fikir Kal Ethiopian Movie", videoId: "QM-9NY8BFQU" }
         ]
       }
     };
