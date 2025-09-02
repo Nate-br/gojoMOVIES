@@ -18,6 +18,123 @@
       font-family: var(--font-amharic-serif), var(--font-ui);
     }
     button, input, #controls, .tab-button, #time-display { font-family: var(--font-ui), var(--font-amharic-sans); }
+    
+    /* Star Rating System */
+    .rating-container {
+      display: flex;
+      align-items: center;
+      margin: 0.5rem 1.2rem;
+      gap: 6px;
+    }
+    .stars {
+      display: flex;
+      gap: 2px;
+    }
+    .star {
+      width: 16px;
+      height: 16px;
+      cursor: pointer;
+      transition: transform 0.1s;
+    }
+    .star:hover {
+      transform: scale(1.2);
+    }
+    .rating-text {
+      font-size: 0.75rem;
+      color: #a3bffa;
+      margin-left: 4px;
+    }
+    .video-card .rating-overlay {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      background: rgba(15, 17, 26, 0.85);
+      border-radius: 12px;
+      padding: 3px 6px;
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      backdrop-filter: blur(4px);
+      border: 1px solid rgba(79, 209, 197, 0.3);
+      z-index: 5;
+    }
+    .video-card .rating-overlay .star-icon {
+      width: 12px;
+      height: 12px;
+      fill: #ecc94b;
+    }
+    .video-card .rating-overlay .rating-value {
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: #ecc94b;
+    }
+    .rating-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(15, 17, 26, 0.9);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 999;
+      backdrop-filter: blur(8px);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s;
+    }
+    .rating-modal.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .rating-modal-content {
+      background: #222b4d;
+      border-radius: 16px;
+      border: 1px solid rgba(79, 209, 197, 0.5);
+      padding: 1.5rem;
+      max-width: 90%;
+      width: 400px;
+      text-align: center;
+      box-shadow: 0 0 20px rgba(79, 209, 197, 0.2);
+    }
+    .rating-modal-stars {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin: 1rem 0;
+    }
+    .rating-modal-stars .star {
+      width: 32px;
+      height: 32px;
+    }
+    .rating-modal-title {
+      font-size: 1.1rem;
+      margin-bottom: 1rem;
+      color: #f0f4ff;
+    }
+    .rating-modal-actions {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      margin-top: 1.5rem;
+    }
+    .rating-modal-btn {
+      padding: 0.5rem 1rem;
+      border-radius: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid transparent;
+    }
+    .rating-modal-btn.submit {
+      background: linear-gradient(90deg, #4fd1c5, #8a58ee);
+      color: #0f111a;
+    }
+    .rating-modal-btn.cancel {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: rgba(255, 255, 255, 0.2);
+      color: #cbd5e1;
+    }
   </style>
 </head>
 <body>
@@ -59,8 +176,8 @@
   <div class="tabs-container" role="tablist" aria-label="Movie categories">
     <button class="tab-button active" role="tab" aria-selected="true" aria-controls="new-releases">New Releases</button>
     <button class="tab-button" role="tab" aria-selected="false" aria-controls="popular">Popular</button>
-    <button class="tab-button" role="tab" aria-selected="false" aria-controls="trending">Trending</button>
-    <button class="tab-button" role="tab" aria-selected="false" aria-controls="classics">Classics</button>
+    <button class="tab-button" role="tab" aria-selected="false" aria-controls="top-rated">Top Rated</button>
+    <button class="tab-button" role="tab" aria-selected="false" aria-controls="most-viewed">Most Viewed</button>
   </div>
 
   <main>
@@ -78,17 +195,17 @@
       </div>
     </section>
 
-    <section class="video-section" id="trending" role="tabpanel" hidden>
+    <section class="video-section" id="top-rated" role="tabpanel" hidden>
       <div class="container mx-auto p-6">
-        <h2 class="text-2xl font-semibold mb-6 text-cyan-400">Trending</h2>
-        <div id="trending-grid" class="video-list"></div>
+        <h2 class="text-2xl font-semibold mb-6 text-cyan-400">Top Rated</h2>
+        <div id="top-rated-grid" class="video-list"></div>
       </div>
     </section>
 
-    <section class="video-section" id="classics" role="tabpanel" hidden>
+    <section class="video-section" id="most-viewed" role="tabpanel" hidden>
       <div class="container mx-auto p-6">
-        <h2 class="text-2xl font-semibold mb-6 text-cyan-400">Classics</h2>
-        <div id="classics-grid" class="video-list"></div>
+        <h2 class="text-2xl font-semibold mb-6 text-cyan-400">Most Viewed</h2>
+        <div id="most-viewed-grid" class="video-list"></div>
       </div>
     </section>
   </main>
@@ -97,11 +214,140 @@
     <p>&copy; 2025 ጎጆ films. All rights reserved. | <a href="#">Privacy Policy</a> | <a href="#">Terms of Service</a></p>
   </footer>
 
+  <!-- Rating Modal -->
+  <div id="ratingModal" class="rating-modal">
+    <div class="rating-modal-content">
+      <h3 class="rating-modal-title">Rate this movie</h3>
+      <div id="modalMovieTitle"></div>
+      <div class="rating-modal-stars" id="modalStars">
+        <span class="star" data-value="1">
+          <svg viewBox="0 0 24 24" fill="#888888" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
+          </svg>
+        </span>
+        <span class="star" data-value="2">
+          <svg viewBox="0 0 24 24" fill="#888888" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
+          </svg>
+        </span>
+        <span class="star" data-value="3">
+          <svg viewBox="0 0 24 24" fill="#888888" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
+          </svg>
+        </span>
+        <span class="star" data-value="4">
+          <svg viewBox="0 0 24 24" fill="#888888" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
+          </svg>
+        </span>
+        <span class="star" data-value="5">
+          <svg viewBox="0 0 24 24" fill="#888888" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
+          </svg>
+        </span>
+      </div>
+      <div class="rating-modal-actions">
+        <button id="cancelRatingBtn" class="rating-modal-btn cancel">Cancel</button>
+        <button id="submitRatingBtn" class="rating-modal-btn submit">Submit Rating</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     // Endpoint and cache
     const CATALOG_ENDPOINT = `${location.origin}/api/catalog`;
     const CATALOG_KEY = 'gojo_catalog_v3';
+    const RATINGS_KEY = 'gojo_ratings';
     const API_TTL_MS = 6 * 60 * 60 * 1000;
+
+    // Ratings system
+    let currentRating = 0;
+    let currentRatingVideoId = '';
+    const ratings = JSON.parse(localStorage.getItem(RATINGS_KEY) || '{}');
+    
+    function getAverageRating(videoId) {
+      if (!videoId || !ratings[videoId]) return 0;
+      const movieRatings = ratings[videoId];
+      if (!movieRatings.length) return 0;
+      const sum = movieRatings.reduce((a, b) => a + b, 0);
+      return sum / movieRatings.length;
+    }
+    
+    function saveRating(videoId, rating) {
+      if (!videoId || rating < 1 || rating > 5) return;
+      if (!ratings[videoId]) {
+        ratings[videoId] = [];
+      }
+      ratings[videoId].push(rating);
+      localStorage.setItem(RATINGS_KEY, JSON.stringify(ratings));
+      
+      // Update UI for all instances of this movie
+      document.querySelectorAll(`[data-video-id="${videoId}"] .rating-overlay .rating-value`).forEach(el => {
+        const avgRating = getAverageRating(videoId);
+        el.textContent = avgRating.toFixed(1);
+      });
+      
+      // Refresh the Top Rated tab if it's active
+      if (document.getElementById('top-rated').classList.contains('active')) {
+        loadVideos('top-rated');
+      }
+    }
+    
+    const ratingModal = document.getElementById('ratingModal');
+    const modalStars = document.querySelectorAll('#modalStars .star');
+    const modalMovieTitle = document.getElementById('modalMovieTitle');
+    const submitRatingBtn = document.getElementById('submitRatingBtn');
+    const cancelRatingBtn = document.getElementById('cancelRatingBtn');
+    
+    function openRatingModal(videoId, title) {
+      currentRatingVideoId = videoId;
+      currentRating = 0;
+      modalMovieTitle.textContent = title;
+      modalStars.forEach(star => {
+        star.querySelector('svg').setAttribute('fill', '#888888');
+      });
+      ratingModal.classList.add('active');
+    }
+    
+    function closeRatingModal() {
+      ratingModal.classList.remove('active');
+      currentRatingVideoId = '';
+      currentRating = 0;
+    }
+    
+    modalStars.forEach(star => {
+      star.addEventListener('click', () => {
+        const value = parseInt(star.getAttribute('data-value'));
+        currentRating = value;
+        updateModalStars(value);
+      });
+      
+      star.addEventListener('mouseover', () => {
+        const value = parseInt(star.getAttribute('data-value'));
+        updateModalStars(value, true);
+      });
+      
+      star.addEventListener('mouseout', () => {
+        updateModalStars(currentRating);
+      });
+    });
+    
+    function updateModalStars(value, isHover = false) {
+      modalStars.forEach(star => {
+        const starValue = parseInt(star.getAttribute('data-value'));
+        const fill = starValue <= value ? '#ecc94b' : '#888888';
+        star.querySelector('svg').setAttribute('fill', fill);
+      });
+    }
+    
+    submitRatingBtn.addEventListener('click', () => {
+      if (currentRating > 0 && currentRatingVideoId) {
+        saveRating(currentRatingVideoId, currentRating);
+      }
+      closeRatingModal();
+    });
+    
+    cancelRatingBtn.addEventListener('click', closeRatingModal);
 
     // Title cleaning function
     function cleanMovieTitle(title) {
@@ -119,13 +365,27 @@
     const i18n = {
       EN: {
         featured: "Featured Movie",
-        tabs: { "new-releases": "New Releases", popular: "Popular", trending: "Trending", classics: "Classics" },
-        search: "Search movies..."
+        tabs: { 
+          "new-releases": "New Releases", 
+          popular: "Popular", 
+          "top-rated": "Top Rated", 
+          "most-viewed": "Most Viewed" 
+        },
+        search: "Search movies...",
+        rating: "Rating",
+        rateThis: "Rate this"
       },
       AM: {
         featured: "የተመረጠ ፊልም",
-        tabs: { "new-releases": "አዲስ መተዎች", popular: "ተወዳጅ", trending: "ተወዳጅ ያሉ", classics: "ቋሚ ፊልሞች" },
-        search: "ፊልሞችን ፈልግ..."
+        tabs: { 
+          "new-releases": "አዲስ መተዎች", 
+          popular: "ተወዳጅ", 
+          "top-rated": "ከፍተኛ ደረጃ", 
+          "most-viewed": "በጣም የታዩ" 
+        },
+        search: "ፊልሞችን ፈልግ...",
+        rating: "ደረጃ",
+        rateThis: "ደረጃ ይስጡ"
       }
     };
 
@@ -165,6 +425,10 @@
         const h2 = section.querySelector('h2');
         if (h2) h2.textContent = dict.tabs[section.id];
       });
+      document.querySelector('.rating-modal-title').textContent = dict.rateThis;
+      document.querySelectorAll('.rating-text').forEach(el => {
+        el.textContent = dict.rating;
+      });
     }
     applyLanguage(currentLang);
     document.getElementById('langToggle').addEventListener('click', () => {
@@ -178,11 +442,25 @@
     function loadVideos(category) {
       const grid = document.getElementById(`${category}-grid`);
       grid.innerHTML = "";
-      const filtered = movieVideos.filter(v => v.category === category);
+      
+      let filtered = movieVideos.filter(v => v.category === category);
+      
+      // For top-rated category, sort by ratings
+      if (category === 'top-rated') {
+        filtered.sort((a, b) => {
+          const ratingA = getAverageRating(a.videoId) || 0;
+          const ratingB = getAverageRating(b.videoId) || 0;
+          return ratingB - ratingA;
+        });
+      }
+      
       filtered.forEach(video => {
         const videoCard = document.createElement("div");
         videoCard.className = "video-card cursor-pointer";
+        videoCard.setAttribute('data-video-id', video.videoId);
         const cleanTitle = cleanMovieTitle(video.title);
+        const avgRating = getAverageRating(video.videoId);
+        
         videoCard.innerHTML = `
           <div class="relative" style="padding-bottom: 56.25%;">
             <img src="https://img.youtube.com/vi/${video.videoId}/hqdefault.jpg" alt="${cleanTitle.replace(/"/g, '&quot;')}" loading="lazy" class="absolute top-0 left-0 w-full h-full object-cover" />
@@ -198,14 +476,37 @@
                 </defs>
               </svg>
             </div>
+            <div class="rating-overlay">
+              <svg class="star-icon" viewBox="0 0 24 24" fill="#ecc94b" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
+              </svg>
+              <span class="rating-value">${avgRating.toFixed(1)}</span>
+            </div>
           </div>
           <h3 title="${cleanTitle.replace(/"/g, '&quot;')}">
             ${cleanTitle.replace(/</g, '&lt;').replace(/>/g, '&gt;')}
           </h3>
+          <div class="rating-container">
+            <button class="rate-btn" aria-label="Rate this movie">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="#4fd1c5" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
+              </svg>
+            </button>
+            <span class="rating-text">${i18n[currentLang].rating}</span>
+          </div>
         `;
-        videoCard.addEventListener("click", () => {
+        
+        // Set up event listeners
+        videoCard.querySelector('.rate-btn').addEventListener('click', (e) => {
+          e.stopPropagation(); // Prevent navigation to player
+          openRatingModal(video.videoId, cleanTitle);
+        });
+        
+        videoCard.addEventListener("click", (e) => {
+          if (e.target.closest('.rate-btn')) return; // Don't navigate if clicking rating button
           window.location.href = `player.html?v=${encodeURIComponent(video.videoId)}&t=${encodeURIComponent(cleanTitle)}&lang=${encodeURIComponent(currentLang)}`;
         });
+        
         grid.appendChild(videoCard);
         setTimeout(() => videoCard.classList.add("loaded"), 50);
       });
@@ -221,7 +522,7 @@
     searchInput.addEventListener('blur', () => {
       searchInput.classList.remove('active');
       searchInput.value = '';
-      ['new-releases', 'popular', 'trending', 'classics'].forEach(loadVideos);
+      ['new-releases', 'popular', 'top-rated', 'most-viewed'].forEach(loadVideos);
     });
     searchInput.addEventListener('input', () => {
       const query = searchInput.value.toLowerCase();
@@ -296,11 +597,21 @@
     // Build grids from catalog
     function setFromCatalog(cat) {
       movieVideos = [];
-      ['new-releases','popular','trending','classics'].forEach(key => {
-        const list = (cat.categories?.[key] || []).map(v => ({ ...v, category: key }));
-        movieVideos.push(...list);
-      });
-      ['new-releases','popular','trending','classics'].forEach(loadVideos);
+      
+      // Handle new categories with fallbacks
+      const newReleasesData = cat.categories?.['new-releases'] || [];
+      const popularData = cat.categories?.['popular'] || [];
+      const classicsData = cat.categories?.['classics'] || []; // use classics as most-viewed
+      const trendingData = cat.categories?.['trending'] || []; // use trending as top-rated
+      
+      // Map data to our new categories
+      movieVideos.push(...newReleasesData.map(v => ({ ...v, category: 'new-releases' })));
+      movieVideos.push(...popularData.map(v => ({ ...v, category: 'popular' })));
+      movieVideos.push(...trendingData.map(v => ({ ...v, category: 'top-rated' })));
+      movieVideos.push(...classicsData.map(v => ({ ...v, category: 'most-viewed' })));
+      
+      // Ensure we have data for all categories
+      ['new-releases', 'popular', 'top-rated', 'most-viewed'].forEach(loadVideos);
       applyHeroFromCatalog(cat);
     }
 
@@ -312,13 +623,13 @@
           { title: "ጥላዬ (Telaye) - Full Amharic Movie 2022", videoId: "SxVyFHDyrRI" },
           { title: "ባለ ክራር (Bale Kirar) - Ethiopian Full Movie 2024", videoId: "WIJU3F5Vrmc" }
         ],
-        popular: [
+        'popular': [
           { title: "ወዳጅ (Wedaj) - Full Ethiopian Movie 2023", videoId: "phmIAGUlKVg" }
         ],
-        trending: [
+        'trending': [
           { title: "ወይኔ የአራዳ ልጅ 5 (Wayne Yarada Lij 5) - Full Movie 2020", videoId: "u4n1bBSWPHY" }
         ],
-        classics: [
+        'classics': [
           { title: "ባለ ክራር (Bale Kirar) - Ethiopian Full Movie 2024", videoId: "WIJU3F5Vrmc" }
         ]
       }
@@ -326,7 +637,7 @@
     function setFromFallback() { setFromCatalog(FALLBACK_CATALOG); }
     function isCatalogEmpty(cat) {
       const cats = cat?.categories || {};
-      return ['new-releases','popular','trending','classics']
+      return ['new-releases', 'popular', 'trending', 'classics']
         .every(k => !Array.isArray(cats[k]) || cats[k].length === 0);
     }
 
