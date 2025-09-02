@@ -103,6 +103,18 @@
     const CATALOG_KEY = 'gojo_catalog_v3';
     const API_TTL_MS = 6 * 60 * 60 * 1000;
 
+    // Title cleaning function
+    function cleanMovieTitle(title) {
+      if (!title) return '';
+      return title
+        .replace(/\s*\|.*$/, '') // Remove pipe and everything after
+        .replace(/\s*-\s*(Full|Ethiopian|Amharic|New).*$/i, '') // Remove standard suffixes
+        .replace(/#\w+/g, '') // Remove hashtags
+        .replace(/\s{2,}/g, ' ') // Fix multiple spaces
+        .replace(/KATEX_INLINE_OPEN\d{4}KATEX_INLINE_CLOSE/, ' $& ') // Keep year in parentheses but clean spacing
+        .trim();
+    }
+
     // Language pack
     const i18n = {
       EN: {
@@ -160,45 +172,7 @@
       localStorage.setItem('gojo_lang', currentLang);
       applyLanguage(currentLang);
     });
-// Add this function to clean movie titles (add to your script section in index.html)
-function cleanMovieTitle(title) {
-  // First, remove common YouTube title patterns
-  return title
-    .replace(/\s*\|.*$/, '') // Remove pipe and everything after
-    .replace(/\s*-\s*(Full|Ethiopian|Amharic|New).*$/i, '') // Remove standard suffixes
-    .replace(/#\w+/g, '') // Remove hashtags
-    .replace(/\s{2,}/g, ' ') // Fix multiple spaces
-    .replace(/\s*KATEX_INLINE_OPEN\d{4}KATEX_INLINE_CLOSE\s*$/, ' $&') // Keep year in parentheses but clean spacing
-    .trim();
-}
 
-// Update where you create video cards (in the loadVideos function)
-filtered.forEach(video => {
-  const videoCard = document.createElement("div");
-  videoCard.className = "video-card cursor-pointer";
-  const cleanTitle = cleanMovieTitle(video.title);
-  videoCard.innerHTML = `
-    <div class="relative" style="padding-bottom: 56.25%;">
-      <img src="https://img.youtube.com/vi/${video.videoId}/hqdefault.jpg" alt="${cleanTitle.replace(/"/g, '&quot;')}" loading="lazy" class="absolute top-0 left-0 w-full h-full object-cover" />
-      <div class="play-icon absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 pointer-events-none select-none" aria-hidden="true">
-        <svg width="16" height="16" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <circle cx="24" cy="24" r="22" fill="url(#grad1)" fill-opacity="0.7" />
-          <path d="M20 17L33 24L20 31V17Z" fill="white" />
-          <defs>
-            <linearGradient id="grad1" x1="0" y1="0" x2="48" y2="48" gradientUnits="userSpaceOnUse">
-              <stop stop-color="#4fd1c5" />
-              <stop offset="1" stop-color="#2c7a7b" />
-            </linearGradient>
-          </defs>
-        </svg>
-      </div>
-    </div>
-    <h3 title="${cleanTitle.replace(/"/g, '&quot;')}">
-      ${cleanTitle.replace(/</g, '&lt;').replace(/>/g, '&gt;')}
-    </h3>
-  `;
-  // rest of your code
-});
     // Grid rendering
     let movieVideos = [];
     function loadVideos(category) {
@@ -208,9 +182,10 @@ filtered.forEach(video => {
       filtered.forEach(video => {
         const videoCard = document.createElement("div");
         videoCard.className = "video-card cursor-pointer";
+        const cleanTitle = cleanMovieTitle(video.title);
         videoCard.innerHTML = `
           <div class="relative" style="padding-bottom: 56.25%;">
-            <img src="https://img.youtube.com/vi/${video.videoId}/hqdefault.jpg" alt="${video.title.replace(/"/g, '&quot;')}" loading="lazy" class="absolute top-0 left-0 w-full h-full object-cover" />
+            <img src="https://img.youtube.com/vi/${video.videoId}/hqdefault.jpg" alt="${cleanTitle.replace(/"/g, '&quot;')}" loading="lazy" class="absolute top-0 left-0 w-full h-full object-cover" />
             <div class="play-icon absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 pointer-events-none select-none" aria-hidden="true">
               <svg width="16" height="16" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <circle cx="24" cy="24" r="22" fill="url(#grad1)" fill-opacity="0.7" />
@@ -224,12 +199,12 @@ filtered.forEach(video => {
               </svg>
             </div>
           </div>
-          <h3 title="${video.title.replace(/"/g, '&quot;')}">
-            ${video.title.replace(/</g, '&lt;').replace(/>/g, '&gt;')}
+          <h3 title="${cleanTitle.replace(/"/g, '&quot;')}">
+            ${cleanTitle.replace(/</g, '&lt;').replace(/>/g, '&gt;')}
           </h3>
         `;
         videoCard.addEventListener("click", () => {
-          window.location.href = `player.html?v=${encodeURIComponent(video.videoId)}&t=${encodeURIComponent(video.title)}&lang=${encodeURIComponent(currentLang)}`;
+          window.location.href = `player.html?v=${encodeURIComponent(video.videoId)}&t=${encodeURIComponent(cleanTitle)}&lang=${encodeURIComponent(currentLang)}`;
         });
         grid.appendChild(videoCard);
         setTimeout(() => videoCard.classList.add("loaded"), 50);
@@ -291,7 +266,8 @@ filtered.forEach(video => {
         const img = document.getElementById('thumbnailImg');
         const titleOverlay = document.querySelector('#rotatingThumbnail .title-overlay');
         img.src = `https://img.youtube.com/vi/${heroItems[0].videoId}/hqdefault.jpg`;
-        titleOverlay.textContent = heroItems[0].title;
+        const cleanTitle = cleanMovieTitle(heroItems[0].title);
+        titleOverlay.textContent = cleanTitle;
       }
     }
     function rotateHero() {
@@ -303,8 +279,9 @@ filtered.forEach(video => {
       setTimeout(() => {
         heroIndex = (heroIndex + 1) % heroItems.length;
         const item = heroItems[heroIndex];
+        const cleanTitle = cleanMovieTitle(item.title);
         img.src = `https://img.youtube.com/vi/${item.videoId}/hqdefault.jpg`;
-        titleOverlay.textContent = item.title;
+        titleOverlay.textContent = cleanTitle;
         img.classList.remove('fading');
       }, 500);
     }
@@ -312,7 +289,8 @@ filtered.forEach(video => {
     document.getElementById('rotatingThumbnail').addEventListener('click', () => {
       if (!heroItems.length) return;
       const item = heroItems[heroIndex];
-      window.location.href = `player.html?v=${encodeURIComponent(item.videoId)}&t=${encodeURIComponent(item.title)}&lang=${encodeURIComponent(currentLang)}`;
+      const cleanTitle = cleanMovieTitle(item.title);
+      window.location.href = `player.html?v=${encodeURIComponent(item.videoId)}&t=${encodeURIComponent(cleanTitle)}&lang=${encodeURIComponent(currentLang)}`;
     });
 
     // Build grids from catalog
@@ -399,4 +377,3 @@ filtered.forEach(video => {
   </script>
 </body>
 </html>
-
