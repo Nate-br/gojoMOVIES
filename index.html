@@ -13,17 +13,17 @@
       --font-amharic-sans: "Noto Sans Ethiopic", "Abyssinica SIL", "Noto Sans", sans-serif;
       --font-amharic-serif: "Noto Serif Ethiopic", "Abyssinica SIL", serif;
       
-      /* Professional color palette */
-      --bg-primary: #121212;
-      --bg-secondary: #1e1e1e;
-      --bg-tertiary: #252525;
-      --bg-card: #1a1a1a;
+      /* Professional dark cinema theme */
+      --bg-primary: #0a0a0a;
+      --bg-secondary: #121212;
+      --bg-tertiary: #1a1a1a;
+      --bg-card: #141414;
       --text-primary: #ffffff;
       --text-secondary: #e0e0e0;
-      --text-tertiary: #aaaaaa;
-      --accent-primary: #FF5A5F;  /* Brand red */
-      --accent-secondary: #00A699; /* Complementary teal */
-      --accent-tertiary: #FF9900;  /* Warning/rating gold */
+      --text-tertiary: #a0a0a0;
+      --accent-primary: #e50914;  /* Netflix red */
+      --accent-secondary: #564d65; /* Subtle purple */
+      --accent-tertiary: #FFC107;  /* Gold for ratings */
       --border-subtle: rgba(255, 255, 255, 0.1);
       --shadow-subtle: 0 4px 12px rgba(0, 0, 0, 0.2);
       --shadow-strong: 0 8px 30px rgba(0, 0, 0, 0.4);
@@ -39,6 +39,19 @@
       margin: 0;
       padding: 0;
       overflow-x: hidden;
+    }
+    
+    /* Add subtle grain texture */
+    body::after {
+      content: "";
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: -1;
     }
     
     /* Typography */
@@ -66,7 +79,7 @@
       left: 0;
       right: 0;
       z-index: 100;
-      background: linear-gradient(180deg, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.7) 80%, rgba(0,0,0,0) 100%);
+      background: rgba(10, 10, 10, 0.95);
       backdrop-filter: blur(10px);
       -webkit-backdrop-filter: blur(10px);
       padding: 1rem 2rem;
@@ -89,7 +102,7 @@
     header .logo .circle-icon {
       width: 40px;
       height: 40px;
-      background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+      background: var(--accent-primary);
       border-radius: 50%;
       color: white;
       font-weight: 800;
@@ -97,14 +110,14 @@
       display: flex;
       justify-content: center;
       align-items: center;
-      box-shadow: 0 0 15px rgba(255, 90, 95, 0.5);
+      box-shadow: 0 0 15px rgba(229, 9, 20, 0.4);
       user-select: none;
     }
     
     header .logo h1 {
       font-size: 1.75rem;
       font-weight: 700;
-      background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
+      background: linear-gradient(90deg, var(--accent-primary), #ff6b6b);
       -webkit-background-clip: text;
       background-clip: text;
       color: transparent;
@@ -177,7 +190,7 @@
     }
     
     .btn-primary:hover {
-      background: #ff4147;
+      background: #f81d28;
       transform: translateY(-1px);
     }
     
@@ -188,7 +201,7 @@
     }
     
     .btn-secondary:hover {
-      background: rgba(255, 90, 95, 0.1);
+      background: rgba(229, 9, 20, 0.1);
       transform: translateY(-1px);
     }
     
@@ -306,7 +319,7 @@
       -webkit-backdrop-filter: blur(10px);
       overflow-x: auto;
       scrollbar-width: none;
-      background: linear-gradient(180deg, rgba(18,18,18,0.9) 0%, rgba(18,18,18,0.5) 100%);
+      background: linear-gradient(180deg, rgba(10,10,10,0.9) 0%, rgba(10,10,10,0.5) 100%);
     }
     
     .tabs-container::-webkit-scrollbar {
@@ -379,14 +392,14 @@
       background: var(--bg-card);
       border-radius: 8px;
       overflow: hidden;
-      transition: all 0.3s ease;
+      transition: transform 0.25s ease-out, box-shadow 0.25s ease-out;
       box-shadow: var(--shadow-subtle);
       cursor: pointer;
     }
     
     .video-card:hover {
-      transform: translateY(-5px) scale(1.02);
-      box-shadow: var(--shadow-strong);
+      transform: translateY(-6px) scale(1.03);
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.25), 0 8px 10px rgba(0, 0, 0, 0.22);
       z-index: 2;
     }
     
@@ -471,6 +484,46 @@
       font-size: 0.85rem;
       font-weight: 600;
       color: var(--accent-tertiary);
+    }
+    
+    /* Pagination controls */
+    .pagination-controls {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 0.75rem;
+      margin: 2rem 0;
+    }
+    
+    .pagination-btn {
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      background: var(--bg-tertiary);
+      color: var(--text-secondary);
+      border: 1px solid var(--border-subtle);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    
+    .pagination-btn:hover:not(:disabled) {
+      background: rgba(255, 255, 255, 0.1);
+    }
+    
+    .pagination-btn.active {
+      background: var(--accent-primary);
+      color: white;
+      border-color: var(--accent-primary);
+    }
+    
+    .pagination-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    
+    /* Page indicator */
+    .page-indicator {
+      font-size: 0.9rem;
+      color: var(--text-tertiary);
     }
     
     /* Rating modal */
@@ -691,31 +744,61 @@
     <section class="video-section active" id="new-releases" role="tabpanel">
       <h2>New Releases</h2>
       <div id="new-releases-grid" class="video-list"></div>
+      <div id="new-releases-pagination" class="pagination-controls">
+        <button class="pagination-btn prev-page" disabled>Previous</button>
+        <span class="page-indicator">Page <span class="current-page">1</span> of <span class="total-pages">1</span></span>
+        <button class="pagination-btn next-page">Next</button>
+      </div>
     </section>
 
     <section class="video-section" id="popular" role="tabpanel" hidden>
       <h2>Popular</h2>
       <div id="popular-grid" class="video-list"></div>
+      <div id="popular-pagination" class="pagination-controls">
+        <button class="pagination-btn prev-page" disabled>Previous</button>
+        <span class="page-indicator">Page <span class="current-page">1</span> of <span class="total-pages">1</span></span>
+        <button class="pagination-btn next-page">Next</button>
+      </div>
     </section>
 
     <section class="video-section" id="top-rated" role="tabpanel" hidden>
       <h2>Top Rated</h2>
       <div id="top-rated-grid" class="video-list"></div>
+      <div id="top-rated-pagination" class="pagination-controls">
+        <button class="pagination-btn prev-page" disabled>Previous</button>
+        <span class="page-indicator">Page <span class="current-page">1</span> of <span class="total-pages">1</span></span>
+        <button class="pagination-btn next-page">Next</button>
+      </div>
     </section>
 
     <section class="video-section" id="most-viewed" role="tabpanel" hidden>
       <h2>Most Viewed</h2>
       <div id="most-viewed-grid" class="video-list"></div>
+      <div id="most-viewed-pagination" class="pagination-controls">
+        <button class="pagination-btn prev-page" disabled>Previous</button>
+        <span class="page-indicator">Page <span class="current-page">1</span> of <span class="total-pages">1</span></span>
+        <button class="pagination-btn next-page">Next</button>
+      </div>
     </section>
     
     <section class="video-section" id="comedies" role="tabpanel" hidden>
       <h2>Comedies</h2>
       <div id="comedies-grid" class="video-list"></div>
+      <div id="comedies-pagination" class="pagination-controls">
+        <button class="pagination-btn prev-page" disabled>Previous</button>
+        <span class="page-indicator">Page <span class="current-page">1</span> of <span class="total-pages">1</span></span>
+        <button class="pagination-btn next-page">Next</button>
+      </div>
     </section>
     
     <section class="video-section" id="dramas" role="tabpanel" hidden>
       <h2>Dramas</h2>
       <div id="dramas-grid" class="video-list"></div>
+      <div id="dramas-pagination" class="pagination-controls">
+        <button class="pagination-btn prev-page" disabled>Previous</button>
+        <span class="page-indicator">Page <span class="current-page">1</span> of <span class="total-pages">1</span></span>
+        <button class="pagination-btn next-page">Next</button>
+      </div>
     </section>
   </main>
 
@@ -809,13 +892,36 @@
     const RATINGS_KEY = 'gojo_ratings';
     const API_TTL_MS = 6 * 60 * 60 * 1000;
     
+    // Pagination configuration
+    const VIDEOS_PER_PAGE = 12;
+    const paginationState = {
+      'new-releases': { currentPage: 1, totalPages: 1 },
+      'popular': { currentPage: 1, totalPages: 1 },
+      'top-rated': { currentPage: 1, totalPages: 1 },
+      'most-viewed': { currentPage: 1, totalPages: 1 },
+      'comedies': { currentPage: 1, totalPages: 1 },
+      'dramas': { currentPage: 1, totalPages: 1 }
+    };
+    
     // Enhanced YouTube API queries for Amharic content
     const ENHANCED_QUERIES = [
-      'Amharic full movie 2023', 'Amharic full movie 2024', 'Ethiopian full movie',
-      'አማርኛ ፊልም ሙሉ', 'Ethiopian comedy movie', 'Amharic drama full',
+      // Ethiopian/Amharic Movies by year
+      'Amharic full movie 2024', 'Ethiopian full movie 2024', 'አማርኛ ፊልም ሙሉ 2024',
+      'Amharic full movie 2023', 'Ethiopian full movie 2023', 'አማርኛ ፊልም ሙሉ 2023',
+      'Amharic full movie 2022', 'Ethiopian full movie 2022', 'አማርኛ ፊልም ሙሉ 2022',
+      'Amharic full movie 2021', 'Ethiopian full movie 2021', 'አማርኛ ፊልም ሙሉ 2021',
+      'Amharic full movie 2020', 'Ethiopian full movie 2020', 'አማርኛ ፊልም ሙሉ 2020',
+      // Genres
+      'Ethiopian comedy movie', 'Amharic comedy movie', 'የኢትዮጵያ ኮሜዲ ፊልም',
+      'Ethiopian drama movie', 'Amharic drama movie', 'የኢትዮጵያ ድራማ ፊልም',
+      'Ethiopian action movie', 'Amharic action movie', 'የኢትዮጵያ አክሽን ፊልም',
+      'Ethiopian romance movie', 'Amharic romance movie', 'የኢትዮጵያ ፍቅር ፊልም',
+      'Ethiopian thriller movie', 'Amharic thriller movie',
+      // Specific keywords
       'ሙሉ ፊልም', 'ዘመናዊ የኢትዮጵያ ፊልም', 'ኢትዮጵያን ፊልም', 'አዲስ የኢትዮጵያ ፊልም',
-      'Ethiopia movie comedy', 'Ethiopia movie romance', 'Ethiopia movie action',
-      'Ethiopian series', 'Amharic series full', 'ድራማ በአማርኛ'
+      // By production studios (major Ethiopian studios)
+      'Sebastopol Entertainment', 'Sabisa Films', 'Semhal Movies', 'Admas Film',
+      'Amen Films Ethiopia', 'Mehari Tibebe', 'Eyerusalem Films'
     ];
 
     // Ratings system
@@ -875,7 +981,7 @@
       
       // Refresh the Top Rated tab if it's active
       if (document.getElementById('top-rated').classList.contains('active')) {
-        loadVideos('top-rated');
+        loadVideos('top-rated', paginationState['top-rated'].currentPage);
       }
     }
     
@@ -921,7 +1027,7 @@
     function updateModalStars(value, isHover = false) {
       modalStars.forEach(star => {
         const starValue = parseInt(star.getAttribute('data-value'));
-        const fill = starValue <= value ? '#FF9900' : '#888888';
+        const fill = starValue <= value ? '#FFC107' : '#888888';
         star.querySelector('svg').setAttribute('fill', fill);
       });
     }
@@ -945,6 +1051,34 @@
       }
     });
 
+    // Enhanced movie categorization by title keywords
+    function categorizeByTitle(title) {
+      if (!title) return [];
+      
+      const lowerTitle = title.toLowerCase();
+      const categories = [];
+      
+      // Comedy detection
+      if (lowerTitle.includes('comedy') || 
+          lowerTitle.includes('ኮሜዲ') || 
+          lowerTitle.includes('ቀልድ') ||
+          lowerTitle.includes('funny') ||
+          lowerTitle.includes('sitcom')) {
+        categories.push('comedies');
+      }
+      
+      // Drama detection
+      if (lowerTitle.includes('drama') || 
+          lowerTitle.includes('ድራማ') || 
+          lowerTitle.includes('መሰቃየት') ||
+          lowerTitle.includes('ሐዘን') ||
+          lowerTitle.includes('ፍቅር')) {
+        categories.push('dramas');
+      }
+      
+      return categories;
+    }
+
     // Title cleaning function
     function cleanMovieTitle(title) {
       if (!title) return '';
@@ -958,30 +1092,6 @@
         .replace(/full ethiopian movie/i, '')
         .replace(/full amharic movie/i, '')
         .trim();
-    }
-    
-    // Movie categorization by title keywords
-    function categorizeByTitle(title) {
-      const lowerTitle = title.toLowerCase();
-      
-      // Check for comedy indicators
-      if (lowerTitle.includes('comedy') || 
-          lowerTitle.includes('ኮሜዲ') || 
-          lowerTitle.includes('ቀልድ') ||
-          lowerTitle.includes('funny')) {
-        return 'comedies';
-      }
-      
-      // Check for drama indicators
-      if (lowerTitle.includes('drama') || 
-          lowerTitle.includes('ድራማ') || 
-          lowerTitle.includes('መሰቃየት') ||
-          lowerTitle.includes('ሐዘን')) {
-        return 'dramas';
-      }
-      
-      // Default category
-      return null;
     }
 
     // Language pack
@@ -1000,7 +1110,11 @@
         rateThis: "Rate this movie",
         watchNow: "Watch Now",
         moreInfo: "More Info",
-        views: "views"
+        views: "views",
+        page: "Page",
+        of: "of",
+        previous: "Previous",
+        next: "Next"
       },
       AM: {
         featured: "የተመረጠ ፊልም",
@@ -1016,7 +1130,11 @@
         rateThis: "ደረጃ ይስጡ",
         watchNow: "አሁን ይመልከቱ",
         moreInfo: "ተጨማሪ መረጃ",
-        views: "ዕይታዎች"
+        views: "ዕይታዎች",
+        page: "ገጽ",
+        of: "ከ",
+        previous: "ቀዳሚ",
+        next: "ቀጣይ"
       }
     };
 
@@ -1061,6 +1179,22 @@
         }
       });
       
+      // Update pagination text
+      document.querySelectorAll('.pagination-controls').forEach(control => {
+        const prevBtn = control.querySelector('.prev-page');
+        const nextBtn = control.querySelector('.next-page');
+        const indicator = control.querySelector('.page-indicator');
+        
+        if (prevBtn) prevBtn.textContent = dict.previous;
+        if (nextBtn) nextBtn.textContent = dict.next;
+        if (indicator) {
+          const pageText = indicator.innerHTML;
+          indicator.innerHTML = pageText
+            .replace(/Page/i, dict.page)
+            .replace(/of/i, dict.of);
+        }
+      });
+      
       // Update rating modal
       document.querySelector('.rating-modal-title').textContent = dict.rateThis;
       
@@ -1076,9 +1210,9 @@
       applyLanguage(currentLang);
     });
 
-    // Grid rendering
+    // Grid rendering with pagination
     let movieVideos = [];
-    function loadVideos(category) {
+    function loadVideos(category, page = 1) {
       const grid = document.getElementById(`${category}-grid`);
       if (!grid) return;
       
@@ -1115,7 +1249,21 @@
         });
       }
       
-      filtered.forEach(video => {
+      // Calculate pagination
+      const totalVideos = filtered.length;
+      const totalPages = Math.max(1, Math.ceil(totalVideos / VIDEOS_PER_PAGE));
+      
+      // Update pagination state
+      paginationState[category].totalPages = totalPages;
+      paginationState[category].currentPage = Math.min(page, totalPages);
+      
+      // Get videos for current page
+      const startIndex = (paginationState[category].currentPage - 1) * VIDEOS_PER_PAGE;
+      const endIndex = startIndex + VIDEOS_PER_PAGE;
+      const paginatedVideos = filtered.slice(startIndex, endIndex);
+      
+      // Create video cards
+      paginatedVideos.forEach(video => {
         const videoCard = document.createElement("div");
         videoCard.className = "video-card fade-in";
         videoCard.setAttribute('data-video-id', video.videoId);
@@ -1142,7 +1290,7 @@
             <div class="meta">
               <div class="views">${formatViewCount(video.viewCount)} ${viewText}</div>
               <div class="rating" title="Rate this movie">
-                <svg viewBox="0 0 24 24" fill="#FF9900" xmlns="http://www.w3.org/2000/svg">
+                <svg viewBox="0 0 24 24" fill="${video.categories?.includes('comedies') ? '#FFC107' : '#FFC107'}" xmlns="http://www.w3.org/2000/svg">
                   <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
                 </svg>
                 <span>${avgRating.toFixed(1)}</span>
@@ -1153,16 +1301,69 @@
         
         // Set up event listeners
         videoCard.querySelector('.rating').addEventListener('click', (e) => {
-          e.stopPropagation(); // Prevent navigation to player
+          e.stopPropagation();
           openRatingModal(video.videoId, cleanTitle);
         });
         
         videoCard.addEventListener("click", (e) => {
-          if (e.target.closest('.rating')) return; // Don't navigate if clicking rating
+          if (e.target.closest('.rating')) return;
           window.location.href = `player.html?v=${encodeURIComponent(video.videoId)}&t=${encodeURIComponent(cleanTitle)}&lang=${encodeURIComponent(currentLang)}`;
         });
         
         grid.appendChild(videoCard);
+      });
+      
+      // Update pagination controls
+      updatePaginationControls(category);
+    }
+
+    // Function to update pagination controls
+    function updatePaginationControls(category) {
+      const paginationEl = document.getElementById(`${category}-pagination`);
+      if (!paginationEl) return;
+      
+      const state = paginationState[category];
+      
+      // Update page indicator
+      const currentPageEl = paginationEl.querySelector('.current-page');
+      const totalPagesEl = paginationEl.querySelector('.total-pages');
+      
+      if (currentPageEl) currentPageEl.textContent = state.currentPage;
+      if (totalPagesEl) totalPagesEl.textContent = state.totalPages;
+      
+      // Update button states
+      const prevBtn = paginationEl.querySelector('.prev-page');
+      const nextBtn = paginationEl.querySelector('.next-page');
+      
+      if (prevBtn) prevBtn.disabled = state.currentPage <= 1;
+      if (nextBtn) nextBtn.disabled = state.currentPage >= state.totalPages;
+    }
+
+    // Setup pagination event listeners
+    function setupPaginationListeners() {
+      document.querySelectorAll('.pagination-controls').forEach(control => {
+        const category = control.id.replace('-pagination', '');
+        
+        const prevBtn = control.querySelector('.prev-page');
+        const nextBtn = control.querySelector('.next-page');
+        
+        if (prevBtn) {
+          prevBtn.addEventListener('click', () => {
+            if (paginationState[category].currentPage > 1) {
+              paginationState[category].currentPage--;
+              loadVideos(category, paginationState[category].currentPage);
+            }
+          });
+        }
+        
+        if (nextBtn) {
+          nextBtn.addEventListener('click', () => {
+            if (paginationState[category].currentPage < paginationState[category].totalPages) {
+              paginationState[category].currentPage++;
+              loadVideos(category, paginationState[category].currentPage);
+            }
+          });
+        }
       });
     }
 
@@ -1202,6 +1403,7 @@
       const cleanTitle = cleanMovieTitle(item.title);
       const heroTitle = document.getElementById('heroTitle');
       const heroBackground = document.getElementById('heroBackground');
+      const heroDescription = document.getElementById('heroDescription');
       
       // Use higher quality image for hero background
       heroBackground.src = `https://img.youtube.com/vi/${item.videoId}/maxresdefault.jpg`;
@@ -1211,6 +1413,13 @@
       };
       
       heroTitle.textContent = cleanTitle;
+      
+      // Custom description based on language
+      if (currentLang === 'AM') {
+        heroDescription.textContent = `ጎጆ ፊልምስ ላይ የኢትዮጵያ ፊልሞችን ይመልከቱ።`;
+      } else {
+        heroDescription.textContent = `Watch the latest and greatest Ethiopian films on ጎጆ films.`;
+      }
       
       // Setup hero button events
       document.getElementById('heroPlayBtn').onclick = () => {
@@ -1284,15 +1493,14 @@
           };
           
           // Determine content categories based on title
-          const contentCategory = categorizeByTitle(item.title);
-          const categories = contentCategory ? [contentCategory] : [];
+          const contentCategories = categorizeByTitle(item.title);
           
           // Create enriched video object
           const enrichedVideo = {
             ...item,
             ...metadata,
             category: newCat,
-            categories: categories
+            categories: contentCategories
           };
           
           movieVideos.push(enrichedVideo);
@@ -1302,17 +1510,24 @@
       // Find content-based categories for any uncategorized videos
       movieVideos.forEach(video => {
         if (!video.categories || !video.categories.length) {
-          const contentCategory = categorizeByTitle(video.title);
-          if (contentCategory) {
-            video.categories = [contentCategory];
+          const contentCategories = categorizeByTitle(video.title);
+          if (contentCategories.length) {
+            video.categories = contentCategories;
           } else {
             video.categories = [];
           }
         }
       });
       
+      // Reset pagination for all categories
+      Object.keys(paginationState).forEach(key => {
+        paginationState[key].currentPage = 1;
+      });
+      
       // Load videos for each section
-      ['new-releases', 'popular', 'top-rated', 'most-viewed', 'comedies', 'dramas'].forEach(loadVideos);
+      ['new-releases', 'popular', 'top-rated', 'most-viewed', 'comedies', 'dramas'].forEach(cat => {
+        loadVideos(cat, 1);
+      });
       
       // Update hero with a featured new release
       const featuredVideos = movieVideos.filter(v => v.category === 'new-releases');
@@ -1456,9 +1671,14 @@
     }
 
     // Init
-    fetchCatalog(false);
+    fetchCatalog(false).then(() => {
+      setupPaginationListeners();
+    });
+    
     document.getElementById('refreshBtn').addEventListener('click', () => {
-      fetchCatalog(true);
+      fetchCatalog(true).then(() => {
+        setupPaginationListeners();
+      });
     });
   </script>
 </body>
