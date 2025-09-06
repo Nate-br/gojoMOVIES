@@ -297,533 +297,607 @@
     </div>
   </div>
 
-  <script>
-    // Endpoint and cache
-    const CATALOG_ENDPOINT = `${location.origin}/api/catalog`;
-    const CATALOG_KEY = 'gojo_catalog_v4';
-    const RATINGS_KEY = 'gojo_ratings';
-    const API_TTL_MS = 6 * 60 * 60 * 1000;
+ <script>
+  // Show any runtime errors in console so we don't silently fail
+  window.addEventListener('error', (e) => console.error('JS error:', e.message, e.error || ''));
+  window.addEventListener('unhandledrejection', (e) => console.error('Promise rejection:', e.reason || e));
 
-    // Pagination
-    const VIDEOS_PER_PAGE = 12;
-    const paginationState = {
-      'new-releases': { currentPage: 1, totalPages: 1 },
-      'popular': { currentPage: 1, totalPages: 1 },
-      'top-rated': { currentPage: 1, totalPages: 1 },
-      'most-viewed': { currentPage: 1, totalPages: 1 },
-      'comedies': { currentPage: 1, totalPages: 1 },
-      'dramas': { currentPage: 1, totalPages: 1 }
-    };
+  // Endpoint and cache
+  const CATALOG_ENDPOINT = `${location.origin}/api/catalog`;
+  const CATALOG_KEY = 'gojo_catalog_v4';
+  const RATINGS_KEY = 'gojo_ratings';
+  const API_TTL_MS = 6 * 60 * 60 * 1000;
 
-    // Queries
-    const ENHANCED_QUERIES = [
-      'Amharic full movie 2024','Ethiopian full movie 2024','አማርኛ ፊልም ሙሉ 2024',
-      'Amharic full movie 2023','Ethiopian full movie 2023','አማርኛ ፊልም ሙሉ 2023',
-      'Amharic full movie 2022','Ethiopian full movie 2022','አማርኛ ፊልም ሙሉ 2022',
-      'Ethiopian comedy movie','Amharic comedy movie','የኢትዮጵያ ኮሜዲ ፊልም',
-      'Ethiopian drama movie','Amharic drama movie','የኢትዮጵያ ድራማ ፊልም',
-      'amharic movies','ye wendoch guday'
-    ];
+  // Pagination
+  const VIDEOS_PER_PAGE = 12;
+  const paginationState = {
+    'new-releases': { currentPage: 1, totalPages: 1 },
+    'popular': { currentPage: 1, totalPages: 1 },
+    'top-rated': { currentPage: 1, totalPages: 1 },
+    'most-viewed': { currentPage: 1, totalPages: 1 },
+    'comedies': { currentPage: 1, totalPages: 1 },
+    'dramas': { currentPage: 1, totalPages: 1 }
+  };
 
-    // Auth UI
-    const loginBtn = document.getElementById('loginBtn');
-    const userMenu = document.getElementById('userMenu');
-    const userName = document.getElementById('userName');
-    const userDropdown = document.getElementById('userDropdown');
-    const logoutBtn = document.getElementById('logoutBtn');
-    const myListBtn = document.getElementById('myListBtn');
-    const adminLink = document.getElementById('adminLink');
-    const authModal = document.getElementById('authModal');
+  // Queries
+  const ENHANCED_QUERIES = [
+    'Amharic full movie 2024','Ethiopian full movie 2024','አማርኛ ፊልም ሙሉ 2024',
+    'Amharic full movie 2023','Ethiopian full movie 2023','አማርኛ ፊልም ሙሉ 2023',
+    'Amharic full movie 2022','Ethiopian full movie 2022','አማርኛ ፊልም ሙሉ 2022',
+    'Ethiopian comedy movie','Amharic comedy movie','የኢትዮጵያ ኮሜዲ ፊልም',
+    'Ethiopian drama movie','Amharic drama movie','የኢትዮጵያ ድራማ ፊልም',
+    'amharic movies','ye wendoch guday'
+  ];
 
-    function toggleDropdown(show){ userDropdown.style.display = show ? 'block':'none'; }
-    userMenu.addEventListener('click',()=>toggleDropdown(userDropdown.style.display!=='block'));
-    document.addEventListener('click',(e)=>{ if(!userMenu.contains(e.target)) toggleDropdown(false); });
+  // Elements (auth UI)
+  const loginBtn = document.getElementById('loginBtn');
+  const userMenu = document.getElementById('userMenu');
+  const userName = document.getElementById('userName');
+  const userDropdown = document.getElementById('userDropdown');
+  const logoutBtn = document.getElementById('logoutBtn');
+  const myListBtn = document.getElementById('myListBtn');
+  const adminLink = document.getElementById('adminLink');
+  const authModal = document.getElementById('authModal');
 
-    async function refreshAuthUI(){
-      const { data:{ user } } = await supabase.auth.getUser();
-      if(user){
-        loginBtn.style.display='none'; userMenu.style.display='inline-flex';
-        const { data:profile } = await supabase.from('profiles').select('display_name,role').eq('id',user.id).maybeSingle();
-        userName.textContent = profile?.display_name || (user.email?.split('@')[0]||'User');
-        adminLink.style.display = profile?.role === 'admin' ? 'block':'none';
-        await preloadUserLibrary(); reloadAllGrids(); renderMyList();
-      }else{
-        loginBtn.style.display='inline-flex'; userMenu.style.display='none';
-        __liked.clear(); __watchLater.clear(); renderMyList();
-      }
+  // Safe Supabase wrappers (so UI still works if Supabase JS fails to load)
+  const hasSupabase = !!(window.supabase && window.supabase.auth && typeof window.supabase.auth.getUser === 'function');
+
+  async function safeGetUser() {
+    try { if (!hasSupabase) return { data: { user: null }, error: null }; return await supabase.auth.getUser(); }
+    catch (e) { console.warn('safeGetUser', e); return { data: { user: null }, error: e }; }
+  }
+  async function safeSignIn(email, password) {
+    if (!hasSupabase) throw new Error('Auth not available');
+    return supabase.auth.signInWithPassword({ email, password });
+  }
+  async function safeSignUp(email, password) {
+    if (!hasSupabase) throw new Error('Auth not available');
+    return supabase.auth.signUp({ email, password });
+  }
+  async function safeSignOut() {
+    try { if (hasSupabase) await supabase.auth.signOut(); } catch {}
+  }
+  async function safeSelect(table, columns) {
+    if (!hasSupabase) return { data: null, error: null };
+    return supabase.from(table).select(columns);
+  }
+  function onAuthStateChangeSafe(cb) {
+    if (hasSupabase && supabase.auth.onAuthStateChange) supabase.auth.onAuthStateChange(cb);
+  }
+
+  // Dropdown
+  function toggleDropdown(show) { if (userDropdown) userDropdown.style.display = show ? 'block' : 'none'; }
+  if (userMenu) userMenu.addEventListener('click', () => toggleDropdown(userDropdown.style.display !== 'block'));
+  document.addEventListener('click', (e) => { if (!userMenu.contains(e.target)) toggleDropdown(false); });
+
+  // Attach auth button handlers BEFORE any async calls so UI always responds
+  if (loginBtn) loginBtn.addEventListener('click', () => authModal.classList.add('active'));
+  const closeBtn = document.getElementById('authClose');
+  if (closeBtn) closeBtn.onclick = () => authModal.classList.remove('active');
+
+  const loginAction = document.getElementById('authLogin');
+  const signupAction = document.getElementById('authSignup');
+  if (loginAction) loginAction.onclick = async () => {
+    const email = document.getElementById('authEmail').value.trim();
+    const password = document.getElementById('authPass').value.trim();
+    try {
+      const { error } = await safeSignIn(email, password);
+      if (error) { console.error(error); alert('Login failed: ' + error.message); return; }
+      authModal.classList.remove('active');
+      refreshAuthUI();  // safe call
+    } catch (e) {
+      alert('Login not available right now. Try again in a moment.');
     }
-    refreshAuthUI();
-
-    loginBtn.addEventListener('click',()=>authModal.classList.add('active'));
-    document.getElementById('authClose').onclick=()=>authModal.classList.remove('active');
-    document.getElementById('authLogin').onclick=async()=>{
-      const email=document.getElementById('authEmail').value.trim();
-      const password=document.getElementById('authPass').value.trim();
-      const { error } = await supabase.auth.signInWithPassword({ email,password });
-      if(error){ console.error(error); alert('Login failed: '+error.message); return; }
-      authModal.classList.remove('active'); refreshAuthUI();
-    };
-    document.getElementById('authSignup').onclick=async()=>{
-      const email=document.getElementById('authEmail').value.trim();
-      const password=document.getElementById('authPass').value.trim();
-      const { error } = await supabase.auth.signUp({ email,password });
-      if(error){ console.error(error); alert('Signup failed: '+error.message); return; }
+  };
+  if (signupAction) signupAction.onclick = async () => {
+    const email = document.getElementById('authEmail').value.trim();
+    const password = document.getElementById('authPass').value.trim();
+    try {
+      const { error } = await safeSignUp(email, password);
+      if (error) { console.error(error); alert('Signup failed: ' + error.message); return; }
       alert('Signup successful. If confirmation is enabled, check your email.');
-      authModal.classList.remove('active'); refreshAuthUI();
-    };
-    logoutBtn.addEventListener('click',async()=>{ await supabase.auth.signOut(); refreshAuthUI(); });
-    myListBtn.addEventListener('click',()=>document.querySelector('[aria-controls="my-list"]')?.click());
-    supabase.auth.onAuthStateChange(()=>refreshAuthUI());
-
-    // Library state
-    window.__liked = new Set(); window.__watchLater = new Set();
-    async function ensureAuthed(){
-      const { data:{ user } } = await supabase.auth.getUser();
-      if(!user){ authModal.classList.add('active'); throw new Error('Login required'); }
-      return user;
+      authModal.classList.remove('active');
+      refreshAuthUI();
+    } catch (e) {
+      alert('Signup not available right now. Try again in a moment.');
     }
-    async function preloadUserLibrary(){
-      const { data:{ user } } = await supabase.auth.getUser();
-      __liked.clear(); __watchLater.clear();
-      if(!user) return;
-      const [likes,wl] = await Promise.all([
+  };
+  if (logoutBtn) logoutBtn.addEventListener('click', async () => { await safeSignOut(); refreshAuthUI(); });
+  if (myListBtn) myListBtn.addEventListener('click', () => document.querySelector('[aria-controls="my-list"]')?.click());
+
+  if (hasSupabase) onAuthStateChangeSafe(() => refreshAuthUI());
+
+  // Library state
+  window.__liked = new Set();
+  window.__watchLater = new Set();
+
+  async function ensureAuthed() {
+    const { data: { user } } = await safeGetUser();
+    if (!user) { authModal.classList.add('active'); throw new Error('Login required'); }
+    return user;
+  }
+  async function preloadUserLibrary() {
+    const { data: { user } } = await safeGetUser();
+    __liked.clear(); __watchLater.clear();
+    if (!user || !hasSupabase) return;
+    try {
+      const [likes, wl] = await Promise.all([
         supabase.from('likes').select('video_id').limit(500),
         supabase.from('watch_later').select('video_id').limit(500)
       ]);
-      (likes.data||[]).forEach(r=>__liked.add(r.video_id));
-      (wl.data||[]).forEach(r=>__watchLater.add(r.video_id));
+      (likes.data || []).forEach(r => __liked.add(r.video_id));
+      (wl.data || []).forEach(r => __watchLater.add(r.video_id));
+    } catch (e) {
+      console.warn('preloadUserLibrary', e);
     }
-    function reloadAllGrids(){
-      ['new-releases','popular','top-rated','most-viewed','comedies','dramas'].forEach(cat=>{
-        if(document.getElementById(`${cat}-grid`).children.length){
-          loadVideos(cat, paginationState[cat].currentPage);
-        }
-      });
-    }
-    async function handleLikeToggle(e, videoId, title){
-      e.stopPropagation();
-      try{
-        const user = await ensureAuthed();
-        const { data } = await supabase.from('likes').select('video_id').eq('user_id',user.id).eq('video_id',videoId).maybeSingle();
-        if(data){ await supabase.from('likes').delete().match({ user_id:user.id, video_id:videoId }); __liked.delete(videoId); e.currentTarget.classList.remove('active'); }
-        else{ await supabase.from('likes').upsert({ user_id:user.id, video_id:videoId, title }); __liked.add(videoId); e.currentTarget.classList.add('active'); }
+  }
+
+  async function refreshAuthUI() {
+    try {
+      const { data: { user } } = await safeGetUser();
+      if (user) {
+        if (loginBtn) loginBtn.style.display = 'none';
+        if (userMenu) userMenu.style.display = 'inline-flex';
+        try {
+          let display = user.email ? user.email.split('@')[0] : 'User';
+          if (hasSupabase) {
+            const { data: profile } = await supabase.from('profiles').select('display_name, role').eq('id', user.id).maybeSingle();
+            if (profile?.display_name) display = profile.display_name;
+            if (adminLink) adminLink.style.display = profile?.role === 'admin' ? 'block' : 'none';
+          }
+          if (userName) userName.textContent = display;
+        } catch {}
+        await preloadUserLibrary();
+        reloadAllGrids();
         renderMyList();
-      }catch(err){ console.warn(err.message); }
-    }
-    async function handleWatchLaterToggle(e, videoId, title){
-      e.stopPropagation();
-      try{
-        const user = await ensureAuthed();
-        const { data } = await supabase.from('watch_later').select('video_id').eq('user_id',user.id).eq('video_id',videoId).maybeSingle();
-        if(data){ await supabase.from('watch_later').delete().match({ user_id:user.id, video_id:videoId }); __watchLater.delete(videoId); e.currentTarget.classList.remove('active'); }
-        else{ await supabase.from('watch_later').upsert({ user_id:user.id, video_id:videoId, title }); __watchLater.add(videoId); e.currentTarget.classList.add('active'); }
+      } else {
+        if (loginBtn) loginBtn.style.display = 'inline-flex';
+        if (userMenu) userMenu.style.display = 'none';
+        __liked.clear(); __watchLater.clear();
         renderMyList();
-      }catch(err){ console.warn(err.message); }
-    }
-    function renderMyList(){
-      const grid=document.getElementById('my-list-grid'); if(!grid) return;
-      const ids=[...new Set([...__liked,...__watchLater])];
-      const data=movieVideos.filter(v=>ids.includes(v.videoId));
-      const viewText=i18n[currentLang].views||"views";
-      grid.innerHTML='';
-      data.forEach(video=>{
-        const cleanTitle=cleanMovieTitle(video.title);
-        const avgRating=getAverageRating(video.videoId, video.viewCount);
-        const card=document.createElement('div'); card.className='video-card';
-        card.innerHTML=`
-          <div class="thumbnail">
-            <img src="https://img.youtube.com/vi/${video.videoId}/mqdefault.jpg" alt="${cleanTitle.replace(/"/g,'&quot;')}" loading="lazy"/>
-            <div class="play-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg></div>
-          </div>
-          <div class="info">
-            <h3>${cleanTitle.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</h3>
-            <div class="meta">
-              <div class="views">${formatViewCount(video.viewCount)} ${viewText}</div>
-              <div class="rating"><svg viewBox="0 0 24 24" fill="#FFC107"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg><span>${avgRating.toFixed(1)}</span></div>
-            </div>
-          </div>`;
-        card.addEventListener('click',()=>{ location.href=`player.html?v=${encodeURIComponent(video.videoId)}&t=${encodeURIComponent(cleanTitle)}&lang=${encodeURIComponent(currentLang)}`; });
-        grid.appendChild(card);
-      });
-      document.getElementById('myListCount').textContent=`${data.length} saved`;
-    }
-
-    // Ratings
-    const ratings = JSON.parse(localStorage.getItem(RATINGS_KEY)||'{}');
-    function calculateRatingFromViews(viewCount){
-      if(!viewCount) return 3.5;
-      if(viewCount>=1000000) return 4.8; if(viewCount>=500000) return 4.6; if(viewCount>=200000) return 4.4;
-      if(viewCount>=100000) return 4.2; if(viewCount>=50000) return 4.0; if(viewCount>=20000) return 3.8;
-      if(viewCount>=10000) return 3.6; if(viewCount>=5000) return 3.4; return 3.2;
-    }
-    function getAverageRating(videoId, viewCount){
-      if(ratings[videoId]?.length){ const s=ratings[videoId].reduce((a,b)=>a+b,0); return s/ratings[videoId].length; }
-      return calculateRatingFromViews(viewCount);
-    }
-    function saveRating(videoId,rating){
-      if(!ratings[videoId]) ratings[videoId]=[];
-      ratings[videoId].push(rating);
-      localStorage.setItem(RATINGS_KEY, JSON.stringify(ratings));
-      document.querySelectorAll(`[data-video-id="${videoId}"] .rating span`).forEach(el=> el.textContent=(getAverageRating(videoId)).toFixed(1));
-      if(document.getElementById('top-rated').classList.contains('active')) loadVideos('top-rated', paginationState['top-rated'].currentPage);
-    }
-    const ratingModal=document.getElementById('ratingModal');
-    const modalStars=document.querySelectorAll('#modalStars .star');
-    const modalMovieTitle=document.getElementById('modalMovieTitle');
-    const submitRatingBtn=document.getElementById('submitRatingBtn');
-    const cancelRatingBtn=document.getElementById('cancelRatingBtn');
-    let currentRating=0,currentRatingVideoId='';
-    function openRatingModal(videoId,title){
-      currentRatingVideoId=videoId; currentRating=0; modalMovieTitle.textContent=title;
-      modalStars.forEach(s=>s.querySelector('svg').setAttribute('fill','#888')); ratingModal.classList.add('active');
-    }
-    function closeRatingModal(){ ratingModal.classList.remove('active'); currentRating=0; currentRatingVideoId=''; }
-    modalStars.forEach(star=>{
-      star.addEventListener('click',()=>{ currentRating=parseInt(star.dataset.value); updateModalStars(currentRating); });
-      star.addEventListener('mouseover',()=>updateModalStars(parseInt(star.dataset.value)));
-      star.addEventListener('mouseout',()=>updateModalStars(currentRating));
-    });
-    function updateModalStars(v){ modalStars.forEach(st=>{ const f=(parseInt(st.dataset.value)<=v)?'#FFC107':'#888'; st.querySelector('svg').setAttribute('fill',f); }); }
-    submitRatingBtn.addEventListener('click',()=>{ if(currentRating && currentRatingVideoId) saveRating(currentRatingVideoId,currentRating); closeRatingModal(); });
-    cancelRatingBtn.addEventListener('click',closeRatingModal);
-
-    // Header scroll
-    window.addEventListener('scroll',()=>{ const h=document.getElementById('header'); if(scrollY>50) h.classList.add('scrolled'); else h.classList.remove('scrolled'); });
-
-    // Language
-    const i18n={ EN:{tabs:{"new-releases":"New Releases",popular:"Popular","top-rated":"Top Rated","most-viewed":"Most Viewed",comedies:"Comedies",dramas:"Dramas","my-list":"My List","search-results":"Search"},search:"Search movies...",views:"views",previous:"Previous",next:"Next",watchNow:"Watch Now",moreInfo:"More Info"}, AM:{tabs:{"new-releases":"አዲስ መተዎች",popular:"ተወዳጅ","top-rated":"ከፍተኛ ደረጃ","most-viewed":"በጣም የታዩ",comedies:"ኮሜዲዎች",dramas:"ድራማዎች","my-list":"የኔ ዝርዝር","search-results":"ፍለጋ"},search:"ፊልሞችን ፈልግ...",views:"ዕይታዎች",previous:"ቀዳሚ",next:"ቀጣይ",watchNow:"አሁን ይመልከቱ",moreInfo:"ተጨማሪ መረጃ"} };
-    let currentLang=localStorage.getItem('gojo_lang')||'EN';
-    function applyLanguage(lang){
-      const d=i18n[lang]||i18n.EN;
-      document.getElementById('langToggle').textContent=lang;
-      document.getElementById('searchInput').placeholder=d.search;
-      document.querySelectorAll('.tabs-container .tab-button').forEach(tab=>{ const c=tab.getAttribute('aria-controls'); tab.textContent=d.tabs[c]||c; });
-      document.getElementById('heroPlayBtn').textContent=d.watchNow; document.getElementById('heroInfoBtn').textContent=d.moreInfo;
-      document.querySelectorAll('.pagination-controls').forEach(p=>{
-        p.querySelector('.prev-page')?.textContent=d.previous;
-        p.querySelector('.next-page')?.textContent=d.next;
-      });
-    }
-    applyLanguage(currentLang);
-    document.getElementById('langToggle').addEventListener('click',()=>{ currentLang=currentLang==='EN'?'AM':'EN'; localStorage.setItem('gojo_lang',currentLang); applyLanguage(currentLang); });
-
-    // Tabs
-    const tabs=document.querySelectorAll('.tab-button');
-    const sections=document.querySelectorAll('.video-section');
-    sections.forEach(s=>{ s.hidden=!s.classList.contains('active'); });
-    tabs.forEach(tab=>{
-      tab.addEventListener('click',()=>{
-        const targetId=tab.getAttribute('aria-controls');
-        tabs.forEach(t=>{ const sel=t===tab; t.classList.toggle('active',sel); t.setAttribute('aria-selected', sel?'true':'false'); });
-        sections.forEach(s=>{ const on=s.id===targetId; s.classList.toggle('active',on); s.hidden=!on; });
-      });
-    });
-
-    // Search (mobile-friendly)
-    const searchIcon=document.getElementById('searchIcon');
-    const searchInput=document.getElementById('searchInput');
-    const searchTab=document.getElementById('searchTab');
-    const searchGrid=document.getElementById('search-results-grid');
-    const searchCount=document.getElementById('searchCount');
-    let lastTabId='new-releases';
-    function switchToTab(id){
-      const tabBtn=document.querySelector(`[aria-controls="${id}"]`);
-      tabs.forEach(t=>{ const sel=t===tabBtn; t.classList.toggle('active',sel); t.setAttribute('aria-selected', sel?'true':'false'); });
-      sections.forEach(s=>{ const on=s.id===id; s.classList.toggle('active',on); s.hidden=!on; });
-    }
-    function openSearch(){
-      searchInput.classList.add('active'); searchTab.hidden=false;
-      lastTabId=document.querySelector('.tab-button.active')?.getAttribute('aria-controls')||'new-releases';
-      switchToTab('search-results'); searchInput.focus();
-    }
-    function closeSearch(){
-      searchInput.value=''; searchInput.classList.remove('active'); searchTab.hidden=true;
-      switchToTab(lastTabId); searchGrid.innerHTML=''; searchCount.textContent='';
-    }
-    searchIcon.addEventListener('click',openSearch);
-    document.addEventListener('keydown',(e)=>{ if(e.key==='Escape') closeSearch(); });
-    tabs.forEach(tab=>tab.addEventListener('click',()=>{ const id=tab.getAttribute('aria-controls'); if(id!=='search-results') lastTabId=id; }));
-    let searchTimer;
-    searchInput.addEventListener('input',()=>{
-      const q=searchInput.value.trim().toLowerCase();
-      if(!q){ closeSearch(); return; }
-      clearTimeout(searchTimer);
-      searchTimer=setTimeout(()=>{
-        const results=movieVideos.filter(v=>(cleanMovieTitle(v.title)||'').toLowerCase().includes(q));
-        renderSearchResults(results);
-      },180);
-    });
-    function renderSearchResults(results){
-      switchToTab('search-results');
-      searchGrid.innerHTML='';
-      const viewText=i18n[currentLang].views||"views";
-      results.slice(0,150).forEach(video=>{
-        const cleanTitle=cleanMovieTitle(video.title);
-        const avgRating=getAverageRating(video.videoId,video.viewCount);
-        const card=document.createElement('div'); card.className='video-card';
-        card.innerHTML=`
-          <div class="thumbnail">
-            <img src="https://img.youtube.com/vi/${video.videoId}/mqdefault.jpg" alt="${cleanTitle.replace(/"/g,'&quot;')}" loading="lazy"/>
-            <div class="play-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg></div>
-          </div>
-          <div class="info">
-            <h3 title="${cleanTitle.replace(/"/g,'&quot;')}">${cleanTitle.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</h3>
-            <div class="meta">
-              <div class="views">${formatViewCount(video.viewCount)} ${viewText}</div>
-              <div class="rating"><svg viewBox="0 0 24 24" fill="#FFC107"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg><span>${avgRating.toFixed(1)}</span></div>
-            </div>
-          </div>`;
-        card.addEventListener('click',()=>{ location.href=`player.html?v=${encodeURIComponent(video.videoId)}&t=${encodeURIComponent(cleanTitle)}&lang=${encodeURIComponent(currentLang)}`; });
-        searchGrid.appendChild(card);
-      });
-      searchCount.textContent=`${results.length} result(s)`;
-    }
-
-    // Helpers
-    function categorizeByTitle(title){
-      const t=(title||'').toLowerCase(); const cats=[];
-      if(t.includes('comedy')||t.includes('ኮሜዲ')||t.includes('ቀልድ')) cats.push('comedies');
-      if(t.includes('drama')||t.includes('ድራማ')||t.includes('ፍቅር')) cats.push('dramas');
-      return cats;
-    }
-    function cleanMovieTitle(title){
-      if(!title) return '';
-      return title
-        .replace(/\s*\|.*$/,'')
-        .replace(/\s*-\s*(Full|Ethiopian|Amharic|New).*$/i,'')
-        .replace(/#\w+/g,'')
-        .replace(/KATEX_INLINE_OPEN(?:19|20)\d{2}KATEX_INLINE_CLOSE/g,' ($&)')
-        .replace(/full (ethiopian|amharic)?\s*movie/ig,'')
-        .replace(/\s{2,}/g,' ')
-        .trim();
-    }
-    function formatViewCount(count){
-      if(!count) return 'N/A';
-      if(count>=1_000_000) return (count/1_000_000).toFixed(1)+'M';
-      if(count>=1_000) return (count/1_000).toFixed(1)+'K';
-      return String(count);
-    }
-
-    // Grid render
-    let movieVideos=[]; let heroList=[]; let heroTimer=null; let heroIndex=0;
-    function loadVideos(category,page=1){
-      const grid=document.getElementById(`${category}-grid`); if(!grid) return;
-      grid.innerHTML='';
-      let filtered=movieVideos.filter(v=>{
-        if(category==='comedies'||category==='dramas') return v.categories?.includes(category);
-        return v.category===category;
-      });
-      if(category==='top-rated'){ filtered.sort((a,b)=>getAverageRating(b.videoId,b.viewCount)-getAverageRating(a.videoId,a.viewCount)); }
-      else if(category==='most-viewed'){ filtered.sort((a,b)=>(b.viewCount||0)-(a.viewCount||0)); }
-      else if(category==='new-releases'){ filtered.sort((a,b)=>(b.publishedAt||0)-(a.publishedAt||0)); }
-
-      const totalVideos=filtered.length;
-      const totalPages=Math.max(1,Math.ceil(totalVideos/VIDEOS_PER_PAGE));
-      paginationState[category].totalPages=totalPages;
-      paginationState[category].currentPage=Math.min(page,totalPages);
-      const start=(paginationState[category].currentPage-1)*VIDEOS_PER_PAGE;
-      const pageItems=filtered.slice(start,start+VIDEOS_PER_PAGE);
-
-      pageItems.forEach(video=>{
-        const cleanTitle=cleanMovieTitle(video.title);
-        const avgRating=getAverageRating(video.videoId,video.viewCount);
-        const viewText=i18n[currentLang].views||'views';
-        const isLiked=__liked.has(video.videoId);
-        const isSaved=__watchLater.has(video.videoId);
-
-        const card=document.createElement('div'); card.className='video-card'; card.setAttribute('data-video-id',video.videoId);
-        card.innerHTML=`
-          <div class="thumbnail">
-            <img src="https://img.youtube.com/vi/${video.videoId}/mqdefault.jpg" alt="${cleanTitle.replace(/"/g,'&quot;')}" loading="lazy"/>
-            <div class="overlay-actions">
-              <button class="btn-like ${isLiked?'active':''}" title="Like" aria-label="Like">❤</button>
-              <button class="btn-save ${isSaved?'active':''}" title="Watch later" aria-label="Watch later">⏱</button>
-            </div>
-            <div class="play-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg></div>
-          </div>
-          <div class="info">
-            <h3 title="${cleanTitle.replace(/"/g,'&quot;')}">${cleanTitle.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</h3>
-            <div class="meta">
-              <div class="views">${formatViewCount(video.viewCount)} ${viewText}</div>
-              <div class="rating"><svg viewBox="0 0 24 24" fill="#FFC107"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg><span>${avgRating.toFixed(1)}</span></div>
-            </div>
-          </div>`;
-        card.querySelector('.rating').addEventListener('click',(e)=>{ e.stopPropagation(); openRatingModal(video.videoId, cleanTitle); });
-        card.querySelector('.btn-like').addEventListener('click',(e)=>handleLikeToggle(e, video.videoId, cleanTitle));
-        card.querySelector('.btn-save').addEventListener('click',(e)=>handleWatchLaterToggle(e, video.videoId, cleanTitle));
-        card.addEventListener('click',()=>{ location.href=`player.html?v=${encodeURIComponent(video.videoId)}&t=${encodeURIComponent(cleanTitle)}&lang=${encodeURIComponent(currentLang)}`; });
-        grid.appendChild(card);
-      });
-
-      updatePaginationControls(category);
-    }
-    function updatePaginationControls(category){
-      const p=document.getElementById(`${category}-pagination`); if(!p) return;
-      const state=paginationState[category];
-      p.querySelector('.current-page').textContent=state.currentPage;
-      p.querySelector('.total-pages').textContent=state.totalPages;
-      p.querySelector('.prev-page').disabled = state.currentPage<=1;
-      p.querySelector('.next-page').disabled = state.currentPage>=state.totalPages;
-    }
-    function setupPaginationListeners(){
-      document.querySelectorAll('.pagination-controls').forEach(control=>{
-        const category=control.id.replace('-pagination','');
-        control.querySelector('.prev-page')?.addEventListener('click',()=>{ if(paginationState[category].currentPage>1){ paginationState[category].currentPage--; loadVideos(category, paginationState[category].currentPage); } });
-        control.querySelector('.next-page')?.addEventListener('click',()=>{ if(paginationState[category].currentPage<paginationState[category].totalPages){ paginationState[category].currentPage++; loadVideos(category, paginationState[category].currentPage); } });
-      });
-    }
-
-    // Hero
-    function updateHero(item){
-      if(!item) return;
-      const cleanTitle=cleanMovieTitle(item.title);
-      const bg=document.getElementById('heroBackground');
-      document.getElementById('heroTitle').textContent=cleanTitle;
-      document.getElementById('heroBackground').src=`https://img.youtube.com/vi/${item.videoId}/maxresdefault.jpg`;
-      bg.onerror=()=>{ bg.src=`https://img.youtube.com/vi/${item.videoId}/hqdefault.jpg`; };
-      document.getElementById('heroPlayBtn').onclick=()=>{ location.href=`player.html?v=${encodeURIComponent(item.videoId)}&t=${encodeURIComponent(cleanTitle)}&lang=${encodeURIComponent(currentLang)}`; };
-      document.getElementById('heroInfoBtn').onclick=()=>openRatingModal(item.videoId, cleanTitle);
-    }
-    function startHeroRotation(list){
-      clearInterval(heroTimer); heroList = list||[]; heroIndex=0;
-      if(heroList.length===0){ return; }
-      updateHero(heroList[0]);
-      if(heroList.length>1){
-        heroTimer = setInterval(()=>{
-          heroIndex=(heroIndex+1)%heroList.length;
-          updateHero(heroList[heroIndex]);
-        }, 7000);
       }
+    } catch (e) {
+      console.warn('refreshAuthUI', e);
+      if (loginBtn) loginBtn.style.display = 'inline-flex';
+      if (userMenu) userMenu.style.display = 'none';
     }
+  }
 
-    // Catalog cache
-    function getCachedCatalog(){
-      try{ const raw=localStorage.getItem(CATALOG_KEY); if(!raw) return null;
-        const cat=JSON.parse(raw); if(!cat?.fetchedAt) return null; if(Date.now()-cat.fetchedAt>API_TTL_MS) return null; return cat;
-      }catch{ return null; }
-    }
-    function setCachedCatalog(cat){ try{ localStorage.setItem(CATALOG_KEY, JSON.stringify(cat)); }catch{} }
+  // Library actions
+  async function handleLikeToggle(e, videoId, title) {
+    e.stopPropagation();
+    try {
+      const user = await ensureAuthed();
+      if (!hasSupabase) return;
+      const { data } = await supabase.from('likes').select('video_id').eq('user_id', user.id).eq('video_id', videoId).maybeSingle();
+      if (data) {
+        await supabase.from('likes').delete().match({ user_id: user.id, video_id: videoId });
+        __liked.delete(videoId);
+        e.currentTarget.classList.remove('active');
+      } else {
+        await supabase.from('likes').upsert({ user_id: user.id, video_id: videoId, title });
+        __liked.add(videoId);
+        e.currentTarget.classList.add('active');
+      }
+      renderMyList();
+    } catch (err) { console.warn(err.message); }
+  }
+  async function handleWatchLaterToggle(e, videoId, title) {
+    e.stopPropagation();
+    try {
+      const user = await ensureAuthed();
+      if (!hasSupabase) return;
+      const { data } = await supabase.from('watch_later').select('video_id').eq('user_id', user.id).eq('video_id', videoId).maybeSingle();
+      if (data) {
+        await supabase.from('watch_later').delete().match({ user_id: user.id, video_id: videoId });
+        __watchLater.delete(videoId);
+        e.currentTarget.classList.remove('active');
+      } else {
+        await supabase.from('watch_later').upsert({ user_id: user.id, video_id: videoId, title });
+        __watchLater.add(videoId);
+        e.currentTarget.classList.add('active');
+      }
+      renderMyList();
+    } catch (err) { console.warn(err.message); }
+  }
 
-    // Build from catalog
-    function setFromCatalog(cat){
-      movieVideos=[];
-      const items=cat.items||[], categoriesMap=cat.categories||{};
-      const metadataMap={};
-      items.forEach(item=>{
-        if(item.videoId){
-          metadataMap[item.videoId]={ viewCount:item.viewCount||Math.floor(Math.random()*100000), publishedAt:item.publishedAt||Date.now(), durationSec:item.durationSec, categories:item.categories||[] };
-        }
+  // Ratings
+  const ratings = JSON.parse(localStorage.getItem(RATINGS_KEY) || '{}');
+  function calculateRatingFromViews(viewCount) {
+    if (!viewCount) return 3.5;
+    if (viewCount >= 1000000) return 4.8; if (viewCount >= 500000) return 4.6; if (viewCount >= 200000) return 4.4;
+    if (viewCount >= 100000) return 4.2; if (viewCount >= 50000) return 4.0; if (viewCount >= 20000) return 3.8;
+    if (viewCount >= 10000) return 3.6; if (viewCount >= 5000) return 3.4; return 3.2;
+  }
+  function getAverageRating(videoId, viewCount) {
+    if (ratings[videoId]?.length) { const s = ratings[videoId].reduce((a,b)=>a+b,0); return s / ratings[videoId].length; }
+    return calculateRatingFromViews(viewCount);
+  }
+  function saveRating(videoId, rating) {
+    if (!ratings[videoId]) ratings[videoId] = [];
+    ratings[videoId].push(rating);
+    localStorage.setItem(RATINGS_KEY, JSON.stringify(ratings));
+    document.querySelectorAll(`[data-video-id="${videoId}"] .rating span`).forEach(el => el.textContent = (getAverageRating(videoId)).toFixed(1));
+    if (document.getElementById('top-rated').classList.contains('active')) loadVideos('top-rated', paginationState['top-rated'].currentPage);
+  }
+  const ratingModal = document.getElementById('ratingModal');
+  const modalStars = document.querySelectorAll('#modalStars .star');
+  const modalMovieTitle = document.getElementById('modalMovieTitle');
+  const submitRatingBtn = document.getElementById('submitRatingBtn');
+  const cancelRatingBtn = document.getElementById('cancelRatingBtn');
+  let currentRating = 0, currentRatingVideoId = '';
+  function openRatingModal(videoId, title) {
+    currentRatingVideoId = videoId; currentRating = 0; modalMovieTitle.textContent = title;
+    modalStars.forEach(s => s.querySelector('svg').setAttribute('fill', '#888')); ratingModal.classList.add('active');
+  }
+  function closeRatingModal() { ratingModal.classList.remove('active'); currentRating = 0; currentRatingVideoId=''; }
+  modalStars.forEach(star => {
+    star.addEventListener('click', () => { currentRating = parseInt(star.dataset.value); updateModalStars(currentRating); });
+    star.addEventListener('mouseover', () => updateModalStars(parseInt(star.dataset.value)));
+    star.addEventListener('mouseout', () => updateModalStars(currentRating));
+  });
+  function updateModalStars(v) { modalStars.forEach(st => { const f = (parseInt(st.dataset.value) <= v) ? '#FFC107' : '#888'; st.querySelector('svg').setAttribute('fill', f); }); }
+  if (submitRatingBtn) submitRatingBtn.addEventListener('click', () => { if (currentRating && currentRatingVideoId) saveRating(currentRatingVideoId, currentRating); closeRatingModal(); });
+  if (cancelRatingBtn) cancelRatingBtn.addEventListener('click', closeRatingModal);
+
+  // Header scroll
+  window.addEventListener('scroll', () => {
+    const h = document.getElementById('header'); if (!h) return;
+    if (scrollY > 50) h.classList.add('scrolled'); else h.classList.remove('scrolled');
+  });
+
+  // Language
+  const i18n = {
+    EN:{tabs:{"new-releases":"New Releases",popular:"Popular","top-rated":"Top Rated","most-viewed":"Most Viewed",comedies:"Comedies",dramas:"Dramas","my-list":"My List","search-results":"Search"},search:"Search movies...",views:"views",previous:"Previous",next:"Next",watchNow:"Watch Now",moreInfo:"More Info"},
+    AM:{tabs:{"new-releases":"አዲስ መተዎች",popular:"ተወዳጅ","top-rated":"ከፍተኛ ደረጃ","most-viewed":"በጣም የታዩ",comedies:"ኮሜዲዎች",dramas:"ድራማዎች","my-list":"የኔ ዝርዝር","search-results":"ፍለጋ"},search:"ፊልሞችን ፈልግ...",views:"ዕይታዎች",previous:"ቀዳሚ",next:"ቀጣይ",watchNow:"አሁን ይመልከቱ",moreInfo:"ተጨማሪ መረጃ"}
+  };
+  let currentLang = localStorage.getItem('gojo_lang') || 'EN';
+  function applyLanguage(lang) {
+    const d = i18n[lang] || i18n.EN;
+    const langToggle = document.getElementById('langToggle');
+    if (langToggle) langToggle.textContent = lang;
+    const searchInput = document.getElementById('searchInput');
+    if (searchInput) searchInput.placeholder = d.search;
+    document.querySelectorAll('.tabs-container .tab-button').forEach(tab => { const c = tab.getAttribute('aria-controls'); tab.textContent = d.tabs[c] || c; });
+    const hp = document.getElementById('heroPlayBtn'), hi = document.getElementById('heroInfoBtn');
+    if (hp) hp.textContent = d.watchNow; if (hi) hi.textContent = d.moreInfo;
+    document.querySelectorAll('.pagination-controls').forEach(p => {
+      p.querySelector('.prev-page')?.textContent = d.previous;
+      p.querySelector('.next-page')?.textContent = d.next;
+    });
+  }
+  applyLanguage(currentLang);
+  const langToggleBtn = document.getElementById('langToggle');
+  if (langToggleBtn) langToggleBtn.addEventListener('click', () => { currentLang = currentLang === 'EN' ? 'AM' : 'EN'; localStorage.setItem('gojo_lang', currentLang); applyLanguage(currentLang); });
+
+  // Tabs
+  const tabs = document.querySelectorAll('.tab-button');
+  const sections = document.querySelectorAll('.video-section');
+  sections.forEach(s => { s.hidden = !s.classList.contains('active'); });
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      const targetId = tab.getAttribute('aria-controls');
+      tabs.forEach(t => { const sel = t === tab; t.classList.toggle('active', sel); t.setAttribute('aria-selected', sel ? 'true' : 'false'); });
+      sections.forEach(s => { const on = s.id === targetId; s.classList.toggle('active', on); s.hidden = !on; });
+    });
+  });
+
+  // Search (mobile-friendly)
+  const searchIcon = document.getElementById('searchIcon');
+  const searchInput = document.getElementById('searchInput');
+  const searchTab = document.getElementById('searchTab');
+  const searchGrid = document.getElementById('search-results-grid');
+  const searchCount = document.getElementById('searchCount');
+  let lastTabId = 'new-releases';
+  function switchToTab(id) {
+    const tabBtn = document.querySelector(`[aria-controls="${id}"]`);
+    tabs.forEach(t => { const sel = t === tabBtn; t.classList.toggle('active', sel); t.setAttribute('aria-selected', sel ? 'true' : 'false'); });
+    sections.forEach(s => { const on = s.id === id; s.classList.toggle('active', on); s.hidden = !on; });
+  }
+  function openSearch() {
+    searchInput.classList.add('active'); searchTab.hidden = false;
+    lastTabId = document.querySelector('.tab-button.active')?.getAttribute('aria-controls') || 'new-releases';
+    switchToTab('search-results'); searchInput.focus();
+  }
+  function closeSearch() {
+    searchInput.value = ''; searchInput.classList.remove('active'); searchTab.hidden = true;
+    switchToTab(lastTabId); searchGrid.innerHTML = ''; if (searchCount) searchCount.textContent = '';
+  }
+  if (searchIcon) searchIcon.addEventListener('click', openSearch);
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeSearch(); });
+  tabs.forEach(tab => tab.addEventListener('click', () => { const id = tab.getAttribute('aria-controls'); if (id !== 'search-results') lastTabId = id; }));
+  let searchTimer;
+  if (searchInput) searchInput.addEventListener('input', () => {
+    const q = searchInput.value.trim().toLowerCase();
+    if (!q) { closeSearch(); return; }
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => {
+      const results = movieVideos.filter(v => (cleanMovieTitle(v.title) || '').toLowerCase().includes(q));
+      renderSearchResults(results);
+    }, 180);
+  });
+  function renderSearchResults(results) {
+    switchToTab('search-results');
+    searchGrid.innerHTML = '';
+    const viewText = i18n[currentLang].views || 'views';
+    results.slice(0, 150).forEach(video => {
+      const cleanTitle = cleanMovieTitle(video.title);
+      const avgRating = getAverageRating(video.videoId, video.viewCount);
+      const card = document.createElement('div'); card.className = 'video-card';
+      card.innerHTML = `
+        <div class="thumbnail">
+          <img src="https://img.youtube.com/vi/${video.videoId}/mqdefault.jpg" alt="${cleanTitle.replace(/"/g,'&quot;')}" loading="lazy"/>
+          <div class="play-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg></div>
+        </div>
+        <div class="info">
+          <h3 title="${cleanTitle.replace(/"/g,'&quot;')}">${cleanTitle.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</h3>
+          <div class="meta">
+            <div class="views">${formatViewCount(video.viewCount)} ${viewText}</div>
+            <div class="rating"><svg viewBox="0 0 24 24" fill="#FFC107"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg><span>${avgRating.toFixed(1)}</span></div>
+          </div>
+        </div>`;
+      card.addEventListener('click', () => { location.href = `player.html?v=${encodeURIComponent(video.videoId)}&t=${encodeURIComponent(cleanTitle)}&lang=${encodeURIComponent(currentLang)}`; });
+      searchGrid.appendChild(card);
+    });
+    if (searchCount) searchCount.textContent = `${results.length} result(s)`;
+  }
+
+  // Helpers
+  function categorizeByTitle(title) {
+    const t = (title || '').toLowerCase(); const cats = [];
+    if (t.includes('comedy') || t.includes('ኮሜዲ') || t.includes('ቀልድ')) cats.push('comedies');
+    if (t.includes('drama') || t.includes('ድራማ') || t.includes('ፍቅር')) cats.push('dramas');
+    return cats;
+  }
+  function cleanMovieTitle(title) {
+    if (!title) return '';
+    return title
+      .replace(/\s*\|.*$/, '')
+      .replace(/\s*-\s*(Full|Ethiopian|Amharic|New).*$/i, '')
+      .replace(/#\w+/g, '')
+      .replace(/KATEX_INLINE_OPEN(?:19|20)\d{2}KATEX_INLINE_CLOSE/g, ' ($&)')   // keep (year)
+      .replace(/full (ethiopian|amharic)?\s*movie/ig, '')
+      .replace(/\s{2,}/g, ' ')
+      .trim();
+  }
+  function formatViewCount(count) {
+    if (!count) return 'N/A';
+    if (count >= 1000000) return (count / 1000000).toFixed(1) + 'M';
+    if (count >= 1000) return (count / 1000).toFixed(1) + 'K';
+    return String(count);
+  }
+
+  // Grid render
+  let movieVideos = []; let heroList = []; let heroTimer = null; let heroIndex = 0;
+
+  function loadVideos(category, page = 1) {
+    const grid = document.getElementById(`${category}-grid`); if (!grid) return;
+    grid.innerHTML = '';
+    let filtered = movieVideos.filter(v => {
+      if (category === 'comedies' || category === 'dramas') return v.categories?.includes(category);
+      return v.category === category;
+    });
+    if (category === 'top-rated') filtered.sort((a,b) => getAverageRating(b.videoId,b.viewCount) - getAverageRating(a.videoId,a.viewCount));
+    else if (category === 'most-viewed') filtered.sort((a,b) => (b.viewCount||0) - (a.viewCount||0));
+    else if (category === 'new-releases') filtered.sort((a,b) => (b.publishedAt||0) - (a.publishedAt||0));
+
+    const totalVideos = filtered.length;
+    const totalPages = Math.max(1, Math.ceil(totalVideos / VIDEOS_PER_PAGE));
+    paginationState[category].totalPages = totalPages;
+    paginationState[category].currentPage = Math.min(page, totalPages);
+    const start = (paginationState[category].currentPage - 1) * VIDEOS_PER_PAGE;
+    const pageItems = filtered.slice(start, start + VIDEOS_PER_PAGE);
+
+    pageItems.forEach(video => {
+      const cleanTitle = cleanMovieTitle(video.title);
+      const avgRating = getAverageRating(video.videoId, video.viewCount);
+      const viewText = i18n[currentLang].views || 'views';
+      const isLiked = __liked.has(video.videoId);
+      const isSaved = __watchLater.has(video.videoId);
+      const card = document.createElement('div'); card.className = 'video-card'; card.setAttribute('data-video-id', video.videoId);
+      card.innerHTML = `
+        <div class="thumbnail">
+          <img src="https://img.youtube.com/vi/${video.videoId}/mqdefault.jpg" alt="${cleanTitle.replace(/"/g,'&quot;')}" loading="lazy"/>
+          <div class="overlay-actions">
+            <button class="btn-like ${isLiked?'active':''}" title="Like" aria-label="Like">❤</button>
+            <button class="btn-save ${isSaved?'active':''}" title="Watch later" aria-label="Watch later">⏱</button>
+          </div>
+          <div class="play-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg></div>
+        </div>
+        <div class="info">
+          <h3 title="${cleanTitle.replace(/"/g,'&quot;')}">${cleanTitle.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</h3>
+          <div class="meta">
+            <div class="views">${formatViewCount(video.viewCount)} ${viewText}</div>
+            <div class="rating"><svg viewBox="0 0 24 24" fill="#FFC107"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg><span>${avgRating.toFixed(1)}</span></div>
+          </div>
+        </div>`;
+      card.querySelector('.rating').addEventListener('click', (e) => { e.stopPropagation(); openRatingModal(video.videoId, cleanTitle); });
+      card.querySelector('.btn-like').addEventListener('click', (e) => handleLikeToggle(e, video.videoId, cleanTitle));
+      card.querySelector('.btn-save').addEventListener('click', (e) => handleWatchLaterToggle(e, video.videoId, cleanTitle));
+      card.addEventListener('click', () => { location.href = `player.html?v=${encodeURIComponent(video.videoId)}&t=${encodeURIComponent(cleanTitle)}&lang=${encodeURIComponent(currentLang)}`; });
+      grid.appendChild(card);
+    });
+
+    updatePaginationControls(category);
+  }
+  function updatePaginationControls(category) {
+    const p = document.getElementById(`${category}-pagination`); if (!p) return;
+    const state = paginationState[category];
+    p.querySelector('.current-page').textContent = state.currentPage;
+    p.querySelector('.total-pages').textContent = state.totalPages;
+    p.querySelector('.prev-page').disabled = state.currentPage <= 1;
+    p.querySelector('.next-page').disabled = state.currentPage >= state.totalPages;
+  }
+  function setupPaginationListeners() {
+    document.querySelectorAll('.pagination-controls').forEach(control => {
+      const category = control.id.replace('-pagination', '');
+      control.querySelector('.prev-page')?.addEventListener('click', () => {
+        if (paginationState[category].currentPage > 1) { paginationState[category].currentPage--; loadVideos(category, paginationState[category].currentPage); }
       });
-      const categories=['new-releases','popular','trending','classics','comedies','dramas'];
-      const categoryMapping={ 'trending':'top-rated','classics':'most-viewed' };
-      categories.forEach(old=>{
-        const list=categoriesMap[old]||[]; const mapped=categoryMapping[old]||old;
-        list.forEach(it=>{
-          if(!it.videoId) return;
-          const md=metadataMap[it.videoId]||{ viewCount:Math.floor(Math.random()*100000), publishedAt:Date.now(), categories:[] };
-          const contentCats=md.categories?.length?md.categories:categorizeByTitle(it.title);
-          movieVideos.push({ ...it, ...md, category:mapped, categories:contentCats });
-        });
+      control.querySelector('.next-page')?.addEventListener('click', () => {
+        if (paginationState[category].currentPage < paginationState[category].totalPages) { paginationState[category].currentPage++; loadVideos(category, paginationState[category].currentPage); }
       });
-      movieVideos.forEach(v=>{ if(!v.categories?.length) v.categories=categorizeByTitle(v.title); });
-      Object.keys(paginationState).forEach(k=>paginationState[k].currentPage=1);
-      ['new-releases','popular','top-rated','most-viewed','comedies','dramas'].forEach(cat=>loadVideos(cat,1));
+    });
+  }
 
-      // Start hero slideshow from new releases (by views)
-      const featured=movieVideos.filter(v=>v.category==='new-releases');
-      featured.sort((a,b)=>(b.viewCount||0)-(a.viewCount||0));
-      startHeroRotation(featured.slice(0,8));
+  // Hero
+  function updateHero(item) {
+    if (!item) return;
+    const cleanTitle = cleanMovieTitle(item.title);
+    const bg = document.getElementById('heroBackground');
+    document.getElementById('heroTitle').textContent = cleanTitle;
+    bg.src = `https://img.youtube.com/vi/${item.videoId}/maxresdefault.jpg`;
+    bg.onerror = () => { bg.src = `https://img.youtube.com/vi/${item.videoId}/hqdefault.jpg`; };
+    document.getElementById('heroPlayBtn').onclick = () => { location.href = `player.html?v=${encodeURIComponent(item.videoId)}&t=${encodeURIComponent(cleanTitle)}&lang=${encodeURIComponent(currentLang)}`; };
+    document.getElementById('heroInfoBtn').onclick = () => openRatingModal(item.videoId, cleanTitle);
+  }
+  function startHeroRotation(list) {
+    clearInterval(heroTimer); heroList = list || []; heroIndex = 0;
+    if (heroList.length === 0) return;
+    updateHero(heroList[0]);
+    if (heroList.length > 1) {
+      heroTimer = setInterval(() => { heroIndex = (heroIndex + 1) % heroList.length; updateHero(heroList[heroIndex]); }, 7000);
     }
+  }
 
-    // Rich FALLBACK so the site shows movies even if API fails
-    const FALLBACK_CATALOG = {
-      fetchedAt: Date.now(),
-      items: [
-        { title:"ጥላዬ (Telaye) - Full Amharic Movie 2022", videoId:"SxVyFHDyrRI", viewCount:252463, publishedAt:Date.now()-30*86400000, durationSec:7200 },
-        { title:"ባለ ክራር (Bale Kirar) - Ethiopian Full Movie 2024", videoId:"WIJU3F5Vrmc", viewCount:183294, publishedAt:Date.now()-7*86400000, durationSec:6800 },
-        { title:"ወዳጅ (Wedaj) - Full Ethiopian Movie 2023", videoId:"phmIAGUlKVg", viewCount:385742, publishedAt:Date.now()-90*86400000, durationSec:7500 },
-        { title:"ወይኔ የአራዳ ልጅ 5 (Wayne Yarada Lij 5) - Full Movie 2020", videoId:"u4n1bBSWPHY", viewCount:695231, publishedAt:Date.now()-365*86400000, durationSec:8000 },
-        { title:"ድራማ - የምር ፍቅር Ethiopian Drama", videoId:"pWYWcpbIKZ4", viewCount:125674, publishedAt:Date.now()-45*86400000, durationSec:5400, categories:["dramas"] },
-        { title:"የኮሜዲ አዋጪ - Ethiopian Comedy Movie", videoId:"pJ7Gk6UdtJM", viewCount:238541, publishedAt:Date.now()-20*86400000, durationSec:6200, categories:["comedies"] },
-        { title:"ፍቅር ቃል - Fikir Kal Ethiopian Movie", videoId:"QM-9NY8BFQU", viewCount:345218, publishedAt:Date.now()-75*86400000, durationSec:6500, categories:["dramas"] },
-        { title:"ተውኔት - Tewinet Full Ethiopian Movie", videoId:"9Iq6EPu7tFU", viewCount:156390, publishedAt:Date.now()-120*86400000, durationSec:7200 },
-        { title:"አሌክስ - Alex New Ethiopian Movie", videoId:"uLSqvvCS9OU", viewCount:526840, publishedAt:Date.now()-60*86400000, durationSec:6900 },
-        { title:"ምርጫ - Mircha Ethiopian Movie", videoId:"oAiYvE9MYVU", viewCount:412367, publishedAt:Date.now()-40*86400000, durationSec:6800 },
-        { title:"ቁስል - Kusil Ethiopian Movie", videoId:"Bd2MZ7e4p7s", viewCount:187569, publishedAt:Date.now()-95*86400000, durationSec:7300 },
-        { title:"ሰማይ ነው - Semay New Ethiopian Movie", videoId:"1xhBnFAXZ2Q", viewCount:298745, publishedAt:Date.now()-15*86400000, durationSec:7000 },
-        { title:"ሰይጣን ተጫወተብኝ - Ethiopian Comedy", videoId:"6dVjd-2SZ0Q", viewCount:354120, publishedAt:Date.now()-25*86400000, durationSec:5800, categories:["comedies"] },
-        { title:"ሙሉ ፊልም - Mulu Film Ethiopian Full Movie 2024", videoId:"mCp3LNoL4Jk", viewCount:120560, publishedAt:Date.now()-5*86400000, durationSec:7500 },
-        { title:"ትዕግስት - Tigist Ethiopian Full Movie", videoId:"kV_2lWDiGL4", viewCount:287436, publishedAt:Date.now()-55*86400000, durationSec:6700 }
+  // Catalog cache
+  function getCachedCatalog() {
+    try {
+      const raw = localStorage.getItem(CATALOG_KEY); if (!raw) return null;
+      const cat = JSON.parse(raw); if (!cat?.fetchedAt) return null;
+      if (Date.now() - cat.fetchedAt > API_TTL_MS) return null;
+      return cat;
+    } catch { return null; }
+  }
+  function setCachedCatalog(cat) { try { localStorage.setItem(CATALOG_KEY, JSON.stringify(cat)); } catch {} }
+
+  // Build from catalog
+  function setFromCatalog(cat) {
+    movieVideos = [];
+    const items = cat.items || [], categoriesMap = cat.categories || {};
+    const metadataMap = {};
+    items.forEach(item => {
+      if (item.videoId) {
+        metadataMap[item.videoId] = {
+          viewCount: item.viewCount || Math.floor(Math.random() * 100000),
+          publishedAt: item.publishedAt || Date.now(),
+          durationSec: item.durationSec,
+          categories: item.categories || []
+        };
+      }
+    });
+    const categories = ['new-releases','popular','trending','classics','comedies','dramas'];
+    const categoryMapping = { 'trending':'top-rated', 'classics':'most-viewed' };
+    categories.forEach(old => {
+      const list = categoriesMap[old] || [];
+      const mapped = categoryMapping[old] || old;
+      list.forEach(it => {
+        if (!it.videoId) return;
+        const md = metadataMap[it.videoId] || { viewCount: Math.floor(Math.random() * 100000), publishedAt: Date.now(), categories: [] };
+        const contentCats = md.categories?.length ? md.categories : categorizeByTitle(it.title);
+        movieVideos.push({ ...it, ...md, category: mapped, categories: contentCats });
+      });
+    });
+    movieVideos.forEach(v => { if (!v.categories?.length) v.categories = categorizeByTitle(v.title); });
+    Object.keys(paginationState).forEach(k => paginationState[k].currentPage = 1);
+    ['new-releases','popular','top-rated','most-viewed','comedies','dramas'].forEach(cat => loadVideos(cat, 1));
+
+    const featured = movieVideos.filter(v => v.category === 'new-releases').sort((a,b) => (b.viewCount||0) - (a.viewCount||0));
+    startHeroRotation(featured.slice(0,8));
+  }
+
+  // Fallback catalog (always shows movies, even if API or JS fails earlier)
+  const FALLBACK_CATALOG = {
+    fetchedAt: Date.now(),
+    items: [
+      { title:"ጥላዬ (Telaye) - Full Amharic Movie 2022", videoId:"SxVyFHDyrRI", viewCount:252463, publishedAt:Date.now()-30*86400000, durationSec:7200 },
+      { title:"ባለ ክራር (Bale Kirar) - Ethiopian Full Movie 2024", videoId:"WIJU3F5Vrmc", viewCount:183294, publishedAt:Date.now()-7*86400000, durationSec:6800 },
+      { title:"ወዳጅ (Wedaj) - Full Ethiopian Movie 2023", videoId:"phmIAGUlKVg", viewCount:385742, publishedAt:Date.now()-90*86400000, durationSec:7500 },
+      { title:"ወይኔ የአራዳ ልጅ 5 (Wayne Yarada Lij 5) - Full Movie 2020", videoId:"u4n1bBSWPHY", viewCount:695231, publishedAt:Date.now()-365*86400000, durationSec:8000 },
+      { title:"ድራማ - የምር ፍቅር Ethiopian Drama", videoId:"pWYWcpbIKZ4", viewCount:125674, publishedAt:Date.now()-45*86400000, durationSec:5400, categories:["dramas"] },
+      { title:"የኮሜዲ አዋጪ - Ethiopian Comedy Movie", videoId:"pJ7Gk6UdtJM", viewCount:238541, publishedAt:Date.now()-20*86400000, durationSec:6200, categories:["comedies"] },
+      { title:"ፍቅር ቃል - Fikir Kal Ethiopian Movie", videoId:"QM-9NY8BFQU", viewCount:345218, publishedAt:Date.now()-75*86400000, durationSec:6500, categories:["dramas"] },
+      { title:"ተውኔት - Tewinet Full Ethiopian Movie", videoId:"9Iq6EPu7tFU", viewCount:156390, publishedAt:Date.now()-120*86400000, durationSec:7200 },
+      { title:"አሌክስ - Alex New Ethiopian Movie", videoId:"uLSqvvCS9OU", viewCount:526840, publishedAt:Date.now()-60*86400000, durationSec:6900 },
+      { title:"ምርጫ - Mircha Ethiopian Movie", videoId:"oAiYvE9MYVU", viewCount:412367, publishedAt:Date.now()-40*86400000, durationSec:6800 },
+      { title:"ቁስል - Kusil Ethiopian Movie", videoId:"Bd2MZ7e4p7s", viewCount:187569, publishedAt:Date.now()-95*86400000, durationSec:7300 },
+      { title:"ሰማይ ነው - Semay New Ethiopian Movie", videoId:"1xhBnFAXZ2Q", viewCount:298745, publishedAt:Date.now()-15*86400000, durationSec:7000 },
+      { title:"ሰይጣን ተጫወተብኝ - Ethiopian Comedy", videoId:"6dVjd-2SZ0Q", viewCount:354120, publishedAt:Date.now()-25*86400000, durationSec:5800, categories:["comedies"] },
+      { title:"ሙሉ ፊልም - Mulu Film Ethiopian Full Movie 2024", videoId:"mCp3LNoL4Jk", viewCount:120560, publishedAt:Date.now()-5*86400000, durationSec:7500 },
+      { title:"ትዕግስት - Tigist Ethiopian Full Movie", videoId:"kV_2lWDiGL4", viewCount:287436, publishedAt:Date.now()-55*86400000, durationSec:6700 }
+    ],
+    categories: {
+      'new-releases': [
+        { title:"ጥላዬ (Telaye) - Full Amharic Movie 2022", videoId:"SxVyFHDyrRI" },
+        { title:"ባለ ክራር (Bale Kirar) - Ethiopian Full Movie 2024", videoId:"WIJU3F5Vrmc" },
+        { title:"ሰማይ ነው - Semay New Ethiopian Movie", videoId:"1xhBnFAXZ2Q" },
+        { title:"ሙሉ ፊልም - Mulu Film Ethiopian Full Movie 2024", videoId:"mCp3LNoL4Jk" }
       ],
-      categories:{
-        'new-releases': [
-          { title:"ጥላዬ (Telaye) - Full Amharic Movie 2022", videoId:"SxVyFHDyrRI" },
-          { title:"ባለ ክራር (Bale Kirar) - Ethiopian Full Movie 2024", videoId:"WIJU3F5Vrmc" },
-          { title:"ሰማይ ነው - Semay New Ethiopian Movie", videoId:"1xhBnFAXZ2Q" },
-          { title:"ሙሉ ፊልም - Mulu Film Ethiopian Full Movie 2024", videoId:"mCp3LNoL4Jk" }
-        ],
-        'popular': [
-          { title:"ወዳጅ (Wedaj) - Full Ethiopian Movie 2023", videoId:"phmIAGUlKVg" },
-          { title:"የኮሜዲ አዋጪ - Ethiopian Comedy Movie", videoId:"pJ7Gk6UdtJM" },
-          { title:"አሌክስ - Alex New Ethiopian Movie", videoId:"uLSqvvCS9OU" },
-          { title:"ሰይጣን ተጫወተብኝ - Ethiopian Comedy", videoId:"6dVjd-2SZ0Q" }
-        ],
-        'trending': [
-          { title:"ወይኔ የአራዳ ልጅ 5 (Wayne Yarada Lij 5) - Full Movie 2020", videoId:"u4n1bBSWPHY" },
-          { title:"ድራማ - የምር ፍቅር Ethiopian Drama", videoId:"pWYWcpbIKZ4" },
-          { title:"ምርጫ - Mircha Ethiopian Movie", videoId:"oAiYvE9MYVU" },
-          { title:"ትዕግስት - Tigist Ethiopian Full Movie", videoId:"kV_2lWDiGL4" }
-        ],
-        'classics': [
-          { title:"ባለ ክራር (Bale Kirar) - Ethiopian Full Movie 2024", videoId:"WIJU3F5Vrmc" },
-          { title:"ወይኔ የአራዳ ልጅ 5 (Wayne Yarada Lij 5) - Full Movie 2020", videoId:"u4n1bBSWPHY" },
-          { title:"ተውኔት - Tewinet Full Ethiopian Movie", videoId:"9Iq6EPu7tFU" },
-          { title:"ቁስል - Kusil Ethiopian Movie", videoId:"Bd2MZ7e4p7s" }
-        ],
-        'comedies': [
-          { title:"የኮሜዲ አዋጪ - Ethiopian Comedy Movie", videoId:"pJ7Gk6UdtJM" },
-          { title:"ሰይጣን ተጫወተብኝ - Ethiopian Comedy", videoId:"6dVjd-2SZ0Q" }
-        ],
-        'dramas': [
-          { title:"ድራማ - የምር ፍቅር Ethiopian Drama", videoId:"pWYWcpbIKZ4" },
-          { title:"ፍቅር ቃል - Fikir Kal Ethiopian Movie", videoId:"QM-9NY8BFQU" }
-        ]
-      }
-    };
-
-    function isCatalogEmpty(cat){
-      const cs=cat?.categories||{};
-      return ['new-releases','popular','trending','classics'].every(k=>!Array.isArray(cs[k])||cs[k].length===0);
+      'popular': [
+        { title:"ወዳጅ (Wedaj) - Full Ethiopian Movie 2023", videoId:"phmIAGUlKVg" },
+        { title:"የኮሜዲ አዋጪ - Ethiopian Comedy Movie", videoId:"pJ7Gk6UdtJM" },
+        { title:"አሌክስ - Alex New Ethiopian Movie", videoId:"uLSqvvCS9OU" },
+        { title:"ሰይጣን ተጫወተብኝ - Ethiopian Comedy", videoId:"6dVjd-2SZ0Q" }
+      ],
+      'trending': [
+        { title:"ወይኔ የአራዳ ልጅ 5 (Wayne Yarada Lij 5) - Full Movie 2020", videoId:"u4n1bBSWPHY" },
+        { title:"ድራማ - የምር ፍቅር Ethiopian Drama", videoId:"pWYWcpbIKZ4" },
+        { title:"ምርጫ - Mircha Ethiopian Movie", videoId:"oAiYvE9MYVU" },
+        { title:"ትዕግስት - Tigist Ethiopian Full Movie", videoId:"kV_2lWDiGL4" }
+      ],
+      'classics': [
+        { title:"ባለ ክራር (Bale Kirar) - Ethiopian Full Movie 2024", videoId:"WIJU3F5Vrmc" },
+        { title:"ወይኔ የአራዳ ልጅ 5 (Wayne Yarada Lij 5) - Full Movie 2020", videoId:"u4n1bBSWPHY" },
+        { title:"ተውኔት - Tewinet Full Ethiopian Movie", videoId:"9Iq6EPu7tFU" },
+        { title:"ቁስል - Kusil Ethiopian Movie", videoId:"Bd2MZ7e4p7s" }
+      ],
+      'comedies': [
+        { title:"የኮሜዲ አዋጪ - Ethiopian Comedy Movie", videoId:"pJ7Gk6UdtJM" },
+        { title:"ሰይጣን ተጫወተብኝ - Ethiopian Comedy", videoId:"6dVjd-2SZ0Q" }
+      ],
+      'dramas': [
+        { title:"ድራማ - የምር ፍቅር Ethiopian Drama", videoId:"pWYWcpbIKZ4" },
+        { title:"ፍቅር ቃል - Fikir Kal Ethiopian Movie", videoId:"QM-9NY8BFQU" }
+      ]
     }
+  };
 
-    async function fetchCatalog(force=false){
-      const cached=!force && getCachedCatalog();
-      if(cached && !isCatalogEmpty(cached)){ setFromCatalog(cached); return cached; }
-      const btn=document.getElementById('refreshBtn'); const original=btn.innerHTML;
-      try{
-        btn.disabled=true;
-        btn.innerHTML=`<svg class="spinner" viewBox="0 0 24 24" width="18" height="18" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round" stroke-dasharray="42"/></svg>`;
-        const q=new URLSearchParams(); if(force) q.set('force','1'); q.set('queries', ENHANCED_QUERIES.join(','));
-        const url=`${CATALOG_ENDPOINT}?${q.toString()}`;
-        const res=await fetch(url,{ cache: force?'no-store':'default' });
-        if(!res.ok) throw new Error('catalog fetch failed');
-        const cat=await res.json();
-        if(!cat?.categories || isCatalogEmpty(cat)){ setFromCatalog(FALLBACK_CATALOG); return FALLBACK_CATALOG; }
-        setCachedCatalog(cat); setFromCatalog(cat); return cat;
-      }catch(e){
-        console.warn('Catalog error, using fallback:', e);
-        const raw=localStorage.getItem(CATALOG_KEY);
-        if(raw){ try{ const old=JSON.parse(raw); if(!isCatalogEmpty(old)){ setFromCatalog(old); return old; } }catch{} }
-        setFromCatalog(FALLBACK_CATALOG); return FALLBACK_CATALOG;
-      }finally{
-        btn.disabled=false; btn.innerHTML=original;
-      }
+  function isCatalogEmpty(cat) {
+    const cs = cat?.categories || {};
+    return ['new-releases','popular','trending','classics'].every(k => !Array.isArray(cs[k]) || cs[k].length === 0);
+  }
+
+  async function fetchCatalog(force=false) {
+    const cached = !force && getCachedCatalog();
+    if (cached && !isCatalogEmpty(cached)) { setFromCatalog(cached); return cached; }
+    const btn = document.getElementById('refreshBtn'); const original = btn ? btn.innerHTML : '';
+    try {
+      if (btn) { btn.disabled = true; btn.innerHTML = `<svg class="spinner" viewBox="0 0 24 24" width="18" height="18" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round" stroke-dasharray="42"/></svg>`; }
+      const q = new URLSearchParams(); if (force) q.set('force','1'); q.set('queries', ENHANCED_QUERIES.join(','));
+      const url = `${CATALOG_ENDPOINT}?${q.toString()}`;
+      const res = await fetch(url, { cache: force ? 'no-store' : 'default' });
+      if (!res.ok) throw new Error('catalog fetch failed');
+      const cat = await res.json();
+      if (!cat?.categories || isCatalogEmpty(cat)) { setFromCatalog(FALLBACK_CATALOG); return FALLBACK_CATALOG; }
+      setCachedCatalog(cat); setFromCatalog(cat); return cat;
+    } catch (e) {
+      console.warn('Catalog error, using fallback:', e);
+      const raw = localStorage.getItem(CATALOG_KEY);
+      if (raw) { try { const old = JSON.parse(raw); if (!isCatalogEmpty(old)) { setFromCatalog(old); return old; } } catch {} }
+      setFromCatalog(FALLBACK_CATALOG); return FALLBACK_CATALOG;
+    } finally {
+      if (btn) { btn.disabled = false; btn.innerHTML = original; }
     }
+  }
 
-    // Init
-    fetchCatalog(false).then(()=>setupPaginationListeners());
+  // Init: 1) movies (always show), 2) bind pagination, 3) auth UI (safe)
+  fetchCatalog(false).then(() => setupPaginationListeners()).catch(() => setFromCatalog(FALLBACK_CATALOG));
+  const refreshBtn = document.getElementById('refreshBtn');
+  if (refreshBtn) refreshBtn.addEventListener('click', () => { fetchCatalog(true).then(() => setupPaginationListeners()); });
 
-    document.getElementById('refreshBtn').addEventListener('click',()=>{ fetchCatalog(true).then(()=>setupPaginationListeners()); });
-  </script>
+  // Run after attaching handlers so the login button always works
+  refreshAuthUI();
+</script>
 </body>
 </html>
+
