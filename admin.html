@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Admin - ጎጆ films</title>
+
+  <!-- Replace with your real Supabase values -->
+  <script>
+    window.SUPABASE_URL = 'https://fuidgrbtqnjphhyiouxn.supabase.co';
+    window.SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ1aWRncmJ0cW5qcGhoeWlvdXhuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTcxOTE3ODcsImV4cCI6MjA3Mjc2Nzc4N30.tlX59jWeSzmHcX1voQ9Pi3z_k-AjoJkf-cM2I8Cx8dA';
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.3/dist/umd/supabase.js" crossorigin="anonymous"></script>
+  <script>
+    window.supabase = supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON);
+  </script>
+
+  <style>
+    :root{
+      --bg-primary:#0a0a0a; --bg-secondary:#141414; --bg-tertiary:#181818; --bg-card:#202020;
+      --text-primary:#ffffff; --text-secondary:#e0e0e0; --text-tertiary:#b3b3b3;
+      --accent-primary:#e50914; --accent-secondary:#ff2d20; --border-subtle:rgba(255,255,255,0.12);
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--bg-primary);color:var(--text-primary);font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif}
+    header{position:sticky;top:0;background:rgba(10,10,10,0.95);backdrop-filter:blur(10px);
+      display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border-subtle);z-index:10}
+    .brand{display:flex;gap:10px;align-items:center}
+    .logo-dot{width:36px;height:36px;border-radius:50%;background:var(--accent-primary);display:flex;align-items:center;justify-content:center;
+      font-weight:900;font-size:18px;color:#fff;box-shadow:0 0 12px rgba(229,9,20,0.35)}
+    header h1{margin:0;font-size:18px}
+    .actions{display:flex;gap:10px;align-items:center}
+    .btn{border:1px solid var(--border-subtle);background:#222;border-radius:8px;color:#fff;padding:8px 12px;cursor:pointer;font-weight:700}
+    .btn.primary{background:var(--accent-primary);border-color:var(--accent-primary)}
+    .btn.ghost{background:transparent}
+    .btn:disabled{opacity:.6;cursor:not-allowed}
+    main{max-width:1100px;margin:18px auto;padding:0 16px;display:grid;gap:16px}
+    .card{background:var(--bg-secondary);border:1px solid var(--border-subtle);border-radius:12px;padding:16px}
+    .card h2{margin:0 0 10px 0;font-size:18px}
+    .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+    input[type="file"],input[type="text"]{background:var(--bg-tertiary);border:1px solid var(--border-subtle);border-radius:8px;color:#fff;padding:10px}
+    .muted{color:var(--text-tertiary);font-size:12px}
+    img.logo-preview{max-width:220px;border-radius:10px;border:1px solid var(--border-subtle);display:block;margin-top:10px}
+    .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+    @media (max-width:820px){.grid{grid-template-columns:1fr}}
+    table{width:100%;border-collapse:collapse;background:var(--bg-tertiary);border:1px solid var(--border-subtle);border-radius:10px;overflow:hidden}
+    th,td{padding:10px;border-bottom:1px solid var(--border-subtle);text-align:left;font-size:14px}
+    th{background:#111;color:#ddd}
+    tr:hover td{background:#1a1a1a}
+    .pill{display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border-radius:999px;border:1px solid var(--border-subtle);font-size:12px;background:#1a1a1a}
+    .ok{color:#40c463}.warn{color:#ffcc00}.bad{color:#ff6b6b}
+    .section-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    .search{flex:1;min-width:220px}
+    details{border:1px dashed var(--border-subtle);border-radius:10px;padding:8px}
+    details > summary{cursor:pointer;font-weight:700}
+    .lists{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:10px}
+    @media (max-width:900px){.lists{grid-template-columns:1fr}}
+    ul{margin:6px 0 0 16px;padding:0}
+    .mono{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace}
+    .small{font-size:12px}
+    .right{margin-left:auto}
+    .inline{display:inline-block}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <div class="logo-dot" title="ጎ">ጎ</div>
+      <h1>Admin Dashboard · ጎጆ films</h1>
+    </div>
+    <div class="actions">
+      <button id="backBtn" class="btn ghost">← Back to site</button>
+      <button id="signOutBtn" class="btn">Sign out</button>
+    </div>
+  </header>
+
+  <main>
+    <!-- Branding -->
+    <section class="card">
+      <h2>Branding · Site logo</h2>
+      <div class="row">
+        <input type="file" id="logoFile" accept="image/*"/>
+        <button id="uploadBtn" class="btn primary">Upload & Save</button>
+        <button id="removeLogoBtn" class="btn" title="Revert to default">Remove logo</button>
+        <span id="uploadStatus" class="muted"></span>
+      </div>
+      <div class="muted small">Bucket: branding · Key in DB: configs.site_logo_url</div>
+      <img id="logoPreview" class="logo-preview" alt="Logo preview"/>
+    </section>
+
+    <!-- Stats -->
+    <section class="card">
+      <h2>Stats</h2>
+      <div class="grid">
+        <div class="pill"><strong>Total users:</strong> <span id="statUsers" class="mono">—</span></div>
+        <div class="pill"><strong>Total likes:</strong> <span id="statLikes" class="mono">—</span></div>
+        <div class="pill"><strong>Watch later:</strong> <span id="statWatchLater" class="mono">—</span></div>
+        <div class="pill"><strong>Views tracked:</strong> <span id="statViews" class="mono">—</span></div>
+      </div>
+    </section>
+
+    <!-- Users -->
+    <section class="card">
+      <div class="section-actions">
+        <h2 style="margin:0">Users</h2>
+        <input id="searchBox" class="search" type="text" placeholder="Search by email or display name..."/>
+        <button id="refreshUsersBtn" class="btn">Refresh</button>
+        <div class="right pill"><span id="pageInfo">Page 1</span></div>
+      </div>
+      <div style="overflow:auto;margin-top:10px;">
+        <table>
+          <thead>
+            <tr>
+              <th>User</th>
+              <th>Role</th>
+              <th>Likes</th>
+              <th>Watch Later</th>
+              <th>Views</th>
+              <th>Joined</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="usersBody">
+            <!-- Rows injected here -->
+          </tbody>
+        </table>
+      </div>
+      <div class="row" style="justify-content:flex-end;margin-top:10px;">
+        <button id="prevPageBtn" class="btn" disabled>Prev</button>
+        <button id="nextPageBtn" class="btn">Next</button>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    // Basic nav
+    document.getElementById('backBtn').addEventListener('click', () => location.href = 'index.html');
+    document.getElementById('signOutBtn').addEventListener('click', async () => {
+      try { await supabase.auth.signOut(); } catch {}
+      location.href = 'index.html';
+    });
+
+    // Auth guard
+    async function ensureAdmin() {
+      const { data: { user }, error } = await supabase.auth.getUser();
+      if (error || !user) {
+        alert('Please login first'); location.href = 'index.html'; return null;
+      }
+      const { data: profile, error: pErr } = await supabase
+        .from('profiles').select('role, email, display_name').eq('id', user.id).maybeSingle();
+      if (pErr || !profile || profile.role !== 'admin') {
+        alert('Admins only'); location.href = 'index.html'; return null;
+      }
+      return { user, profile };
+    }
+
+    // Branding (logo)
+    const logoPreview = document.getElementById('logoPreview');
+    const logoFile = document.getElementById('logoFile');
+    const uploadBtn = document.getElementById('uploadBtn');
+    const removeLogoBtn = document.getElementById('removeLogoBtn');
+    const uploadStatus = document.getElementById('uploadStatus');
+
+    async function loadLogo() {
+      uploadStatus.textContent = 'Loading logo...';
+      try {
+        const { data } = await supabase.from('configs').select('value').eq('key','site_logo_url').maybeSingle();
+        const url = data?.value?.url || '';
+        if (url) {
+          logoPreview.src = url;
+          uploadStatus.textContent = 'Current logo loaded.';
+        } else {
+          logoPreview.src = '';
+          uploadStatus.textContent = 'No logo set (site will show default ጎ).';
+        }
+      } catch (e) {
+        uploadStatus.textContent = 'Failed to load logo.';
+        console.warn(e);
+      }
+    }
+
+    uploadBtn.addEventListener('click', async () => {
+      const file = logoFile.files?.[0];
+      if (!file) return alert('Choose an image file first.');
+      uploadBtn.disabled = true; removeLogoBtn.disabled = true;
+      uploadStatus.textContent = 'Uploading...';
+      try {
+        const name = `logo_${Date.now()}_${file.name}`.replace(/\s+/g,'_');
+        const { error: uErr } = await supabase.storage.from('branding').upload(name, file, { upsert: true, cacheControl: '3600' });
+        if (uErr) throw uErr;
+        const { data: publicUrl } = supabase.storage.from('branding').getPublicUrl(name);
+        const url = publicUrl.publicUrl;
+        const { error: cErr } = await supabase.from('configs').upsert({ key: 'site_logo_url', value: { url } });
+        if (cErr) throw cErr;
+        logoPreview.src = url;
+        uploadStatus.textContent = 'Logo updated!';
+      } catch (e) {
+        console.error(e);
+        alert('Upload failed: ' + (e?.message || e));
+        uploadStatus.textContent = 'Upload failed.';
+      } finally {
+        uploadBtn.disabled = false; removeLogoBtn.disabled = false;
+      }
+    });
+
+    removeLogoBtn.addEventListener('click', async () => {
+      if (!confirm('Remove custom logo? Site will show default ጎ.')) return;
+      try {
+        await supabase.from('configs').delete().eq('key','site_logo_url');
+        logoPreview.src = '';
+        uploadStatus.textContent = 'Logo removed (default ጎ will show).';
+      } catch (e) {
+        console.warn(e);
+        alert('Failed to remove logo.');
+      }
+    });
+
+    // Stats
+    const statUsers = document.getElementById('statUsers');
+    const statLikes = document.getElementById('statLikes');
+    const statWatchLater = document.getElementById('statWatchLater');
+    const statViews = document.getElementById('statViews');
+
+    async function loadStats() {
+      statUsers.textContent = '...'; statLikes.textContent = '...';
+      statWatchLater.textContent = '...'; statViews.textContent = '...';
+      try {
+        const [u, l, w, v] = await Promise.all([
+          supabase.from('profiles').select('id', { count: 'exact', head: true }),
+          supabase.from('likes').select('id', { count: 'exact', head: true }),
+          supabase.from('watch_later').select('id', { count: 'exact', head: true }),
+          supabase.from('views').select('id', { count: 'exact', head: true })
+        ]);
+        statUsers.textContent = u.count ?? 0;
+        statLikes.textContent = l.count ?? 0;
+        statWatchLater.textContent = w.count ?? 0;
+        statViews.textContent = v.count ?? 0;
+      } catch (e) {
+        console.warn(e);
+        statUsers.textContent = statLikes.textContent = statWatchLater.textContent = statViews.textContent = '—';
+      }
+    }
+
+    // Users list with pagination + search
+    const usersBody = document.getElementById('usersBody');
+    const prevPageBtn = document.getElementById('prevPageBtn');
+    const nextPageBtn = document.getElementById('nextPageBtn');
+    const pageInfo = document.getElementById('pageInfo');
+    const searchBox = document.getElementById('searchBox');
+    const refreshUsersBtn = document.getElementById('refreshUsersBtn');
+
+    let currentPage = 1;
+    const pageSize = 50;
+    let lastQuery = '';
+
+    async function loadUsers(page = 1, q = '') {
+      usersBody.innerHTML = `<tr><td colspan="7">Loading...</td></tr>`;
+      let query = supabase.from('profiles').select('id,email,display_name,role,created_at').order('created_at', { ascending: false }).range((page-1)*pageSize, page*pageSize - 1);
+      if (q) {
+        // ilike OR filter
+        query = query.or(`email.ilike.%${q}%,display_name.ilike.%${q}%`);
+      }
+      const { data: users, error } = await query;
+      if (error) {
+        console.warn(error);
+        usersBody.innerHTML = `<tr><td colspan="7">Failed to load users</td></tr>`;
+        return;
+      }
+
+      // Fetch counts per user (likes, wl, views)
+      usersBody.innerHTML = '';
+      const rows = [];
+      for (const u of users) {
+        const [likesCount, wlCount, viewsCount] = await Promise.all([
+          supabase.from('likes').select('id', { count: 'exact', head: true }).eq('user_id', u.id),
+          supabase.from('watch_later').select('id', { count: 'exact', head: true }).eq('user_id', u.id),
+          supabase.from('views').select('id', { count: 'exact', head: true }).eq('user_id', u.id),
+        ]);
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>
+            <div><strong>${(u.display_name || '').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</strong></div>
+            <div class="muted small mono">${(u.email || '').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>
+          </td>
+          <td>${u.role}</td>
+          <td>${likesCount.count ?? 0}</td>
+          <td>${wlCount.count ?? 0}</td>
+          <td>${viewsCount.count ?? 0}</td>
+          <td>${new Date(u.created_at).toLocaleString()}</td>
+          <td><button class="btn small-btn">View</button></td>
+        `;
+        // Detail row
+        const detailTr = document.createElement('tr');
+        const detailTd = document.createElement('td');
+        detailTd.colSpan = 7;
+        detailTd.innerHTML = `
+          <details>
+            <summary>Open library for ${ (u.display_name || u.email || 'user').replace(/</g,'&lt;').replace(/>/g,'&gt;') }</summary>
+            <div class="lists">
+              <div>
+                <strong>Likes (latest 20)</strong>
+                <ul id="like_${u.id}"><li class="muted">Loading...</li></ul>
+              </div>
+              <div>
+                <strong>Watch later (latest 20)</strong>
+                <ul id="wl_${u.id}"><li class="muted">Loading...</li></ul>
+              </div>
+              <div>
+                <strong>Views (latest 20)</strong>
+                <ul id="view_${u.id}"><li class="muted">Loading...</li></ul>
+              </div>
+            </div>
+          </details>
+        `;
+        detailTr.appendChild(detailTd);
+
+        // View button handler
+        tr.querySelector('button').addEventListener('click', () => {
+          const det = detailTd.querySelector('details');
+          det.open = !det.open;
+          if (det.open) loadUserLibrary(u.id);
+        });
+
+        rows.push(tr, detailTr);
+      }
+      if (!rows.length) {
+        usersBody.innerHTML = `<tr><td colspan="7">No users${q ? ' matched your search' : ''}.</td></tr>`;
+      } else {
+        rows.forEach(r => usersBody.appendChild(r));
+      }
+
+      pageInfo.textContent = `Page ${page}`;
+      prevPageBtn.disabled = page <= 1;
+      // naive: if fewer than pageSize rows, no next page
+      nextPageBtn.disabled = (users.length < pageSize);
+    }
+
+    async function loadUserLibrary(userId) {
+      // Likes
+      const likesUl = document.getElementById(`like_${userId}`);
+      const wlUl = document.getElementById(`wl_${userId}`);
+      const viewsUl = document.getElementById(`view_${userId}`);
+
+      try {
+        const [{ data: likes }, { data: wl }, { data: views }] = await Promise.all([
+          supabase.from('likes').select('title,video_id,created_at').eq('user_id', userId).order('created_at', { ascending: false }).limit(20),
+          supabase.from('watch_later').select('title,video_id,created_at').eq('user_id', userId).order('created_at', { ascending: false }).limit(20),
+          supabase.from('views').select('title,video_id,watched_seconds,completed,updated_at').eq('user_id', userId).order('updated_at', { ascending: false }).limit(20),
+        ]);
+
+        likesUl.innerHTML = (likes || []).map(r => `<li><span class="mono">${r.video_id}</span> — ${escapeHtml(r.title)} <span class="muted small">(${new Date(r.created_at).toLocaleString()})</span></li>`).join('') || `<li class="muted">No likes</li>`;
+        wlUl.innerHTML = (wl || []).map(r => `<li><span class="mono">${r.video_id}</span> — ${escapeHtml(r.title)} <span class="muted small">(${new Date(r.created_at).toLocaleString()})</span></li>`).join('') || `<li class="muted">No items</li>`;
+        viewsUl.innerHTML = (views || []).map(r => `<li><span class="mono">${r.video_id}</span> — ${escapeHtml(r.title)} • <span class="small">${r.watched_seconds ?? 0}s ${r.completed ? '✓' : ''}</span> <span class="muted small">(${new Date(r.updated_at).toLocaleString()})</span></li>`).join('') || `<li class="muted">No views</li>`;
+      } catch (e) {
+        console.warn(e);
+        likesUl.innerHTML = wlUl.innerHTML = viewsUl.innerHTML = `<li class="muted">Failed to load</li>`;
+      }
+    }
+
+    function escapeHtml(s=''){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+    // Pagination and search handlers
+    prevPageBtn.addEventListener('click', () => { if (currentPage > 1) { currentPage--; loadUsers(currentPage, lastQuery); } });
+    nextPageBtn.addEventListener('click', () => { currentPage++; loadUsers(currentPage, lastQuery); });
+    refreshUsersBtn.addEventListener('click', () => loadUsers(currentPage, lastQuery));
+
+    let searchTimer;
+    searchBox.addEventListener('input', () => {
+      const q = searchBox.value.trim();
+      lastQuery = q;
+      currentPage = 1;
+      clearTimeout(searchTimer);
+      searchTimer = setTimeout(() => loadUsers(currentPage, lastQuery), 250);
+    });
+
+    // Boot
+    (async function init() {
+      const admin = await ensureAdmin();
+      if (!admin) return;
+      await loadLogo();
+      await loadStats();
+      await loadUsers(1, '');
+    })();
+  </script>
+</body>
+</html>
