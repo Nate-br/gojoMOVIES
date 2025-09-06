@@ -4,37 +4,31 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>ጎጆ films - Player</title>
+
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Noto+Sans+Ethiopic:wght@400;600;700&family=Noto+Serif+Ethiopic:wght@600;700&family=Abyssinica+SIL:wght@400;700&display=swap" rel="stylesheet">
+
+  <!-- Supabase (fill your keys) -->
+  <script type="module">
+    import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+    const SUPABASE_URL = 'https://YOUR-PROJECT-REF.supabase.co';
+    const SUPABASE_ANON = 'YOUR-ANON-PUBLIC-KEY';
+    window.supabase = createClient(SUPABASE_URL, SUPABASE_ANON);
+  </script>
+
   <link rel="stylesheet" href="style.css" />
-  <!-- Fonts: Manrope (UI), Noto Ethiopic (Amharic), Abyssinica SIL fallback -->
-  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=Noto+Sans+Ethiopic:wght@400;600;700&family=Noto+Serif+Ethiopic:wght@600;700&family=Abyssinica+SIL:wght@400;700&display=swap" rel="stylesheet">
-  <style>
-    :root {
-      --font-ui: "Manrope", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
-      --font-amharic-sans: "Noto Sans Ethiopic", "Abyssinica SIL", "Noto Sans", sans-serif;
-      --font-amharic-serif: "Noto Serif Ethiopic", "Abyssinica SIL", serif;
-    }
-    body { font-family: var(--font-ui), var(--font-amharic-sans); letter-spacing: 0.1px; }
-    #info, #suggestedHeading, .video-card h3 { font-family: var(--font-amharic-serif), var(--font-ui); }
-    button, input, #controls, #time-display { font-family: var(--font-ui), var(--font-amharic-sans); }
-  </style>
 </head>
 <body>
   <div id="info" aria-live="polite" aria-atomic="true">Loading...</div>
 
   <div id="playerWrapper" aria-label="YouTube video player wrapper">
     <div id="externalCover" aria-hidden="true" title="Cover YouTube UI"></div>
-
     <div id="playerContainer" aria-label="YouTube video player container">
       <div id="player" role="region" aria-live="off" aria-atomic="true"></div>
-
-      <!-- Subtle gradient masks -->
       <div class="branding-cover-overlay" aria-hidden="true"></div>
       <div class="top-branding-cover" aria-hidden="true"></div>
-
-      <!-- Interaction shield -->
       <div id="interactionShield" aria-hidden="true" title="Interaction Shield"></div>
 
-      <!-- Pause overlay (visible first) -->
       <div id="pauseCover" title="Paused" role="button" tabindex="0" aria-label="Resume playing">
         <svg aria-hidden="true" focusable="false" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
           <circle cx="32" cy="32" r="32" fill="black"/>
@@ -53,28 +47,20 @@
   </div>
 
   <div id="controls">
+    <!-- Like & Save will be injected via script before play/pause -->
     <button id="playPauseBtn" aria-label="Play/Pause" class="icon-button" title="Play/Pause" type="button">
-      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path fill="#4fd1c5" d="M8 5v14l11-7z"/></svg>
+      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path fill="currentColor" d="M8 5v14l11-7z"/></svg>
     </button>
 
-    <div id="progress-container"
-         role="slider"
-         aria-label="Video progress bar"
-         tabindex="0"
-         aria-valuemin="0"
-         aria-valuemax="100"
-         aria-valuenow="0"
-         style="position: relative;">
+    <div id="progress-container" role="slider" aria-label="Video progress bar" tabindex="0" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" style="position: relative;">
       <div id="progress"></div>
-      <div id="previewThumbnail" aria-hidden="true" role="presentation">
-        <img id="previewImage" src="" alt="Preview thumbnail" />
-      </div>
+      <div id="previewThumbnail" aria-hidden="true" role="presentation"><img id="previewImage" src="" alt="Preview thumbnail" /></div>
     </div>
 
     <div id="time-display" aria-live="off" aria-atomic="true">0:00 / 0:00</div>
 
     <button id="muteBtn" aria-label="Mute/Unmute" class="icon-button" title="Mute/Unmute" type="button">
-      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path fill="#4fd1c5" d="M3 9v6h4l5 5V4L7 9H3z"/><path fill="#4fd1c5" d="M16.5 12c0-1.77-1-3.29-2.5-4.03v8.06A4.97 4.97 0 0 0 16.5 12z"/></svg>
+      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path fill="currentColor" d="M3 9v6h4l5 5V4L7 9H3z"/><path fill="currentColor" d="M16.5 12c0-1.77-1-3.29-2.5-4.03v8.06A4.97 4.97 0 0 0 16.5 12z"/></svg>
     </button>
 
     <input id="volumeSlider" type="range" min="0" max="100" value="100" aria-label="Volume" />
@@ -94,24 +80,24 @@
 
     <button id="pipBtn" aria-label="Picture in Picture" class="icon-button" title="Picture in Picture" type="button">
       <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-        <rect x="3" y="5" width="18" height="14" rx="2" fill="#4fd1c5"/>
+        <rect x="3" y="5" width="18" height="14" rx="2" fill="currentColor"/>
         <rect x="12.5" y="11" width="7" height="5.5" rx="1.2" fill="#0f111a"/>
       </svg>
     </button>
 
     <button id="copyLinkBtn" aria-label="Copy link" class="icon-button" title="Copy link" type="button">
-      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path fill="#4fd1c5" d="M3.9 12a5 5 0 0 1 5-5h3v2h-3a3 3 0 1 0 0 6h3v2h-3a5 5 0 0 1-5-5zm7-1h2v2h-2v-2zm4.1-4h-3v2h3a3 3 0 1 1 0 6h-3v2h3a5 5 0 1 0 0-10z"/></svg>
+      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path fill="currentColor" d="M3.9 12a5 5 0 0 1 5-5h3v2h-3a3 3 0 1 0 0 6h3v2h-3a5 5 0 0 1-5-5zm7-1h2v2h-2v-2zm4.1-4h-3v2h3a3 3 0 1 1 0 6h-3v2h3a5 5 0 1 0 0-10z"/></svg>
     </button>
 
     <button id="maximizeBtn" aria-label="Maximize/Exit Fullscreen" class="icon-button" title="Maximize/Exit Fullscreen" type="button">
-      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path fill="#4fd1c5" d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>
+      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path fill="currentColor" d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>
     </button>
   </div>
 
   <button id="backBtn" aria-label="Back to Gojo Films" type="button">Back to Gojo Films</button>
 
   <section id="suggestedMovies" class="container mx-auto p-6">
-    <h2 id="suggestedHeading" class="text-2xl font-semibold mb-6 text-cyan-400">Suggested Movies</h2>
+    <h2 id="suggestedHeading" class="text-2xl font-semibold mb-6">Suggested Movies</h2>
     <div id="suggestedMoviesGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"></div>
   </section>
 
@@ -153,107 +139,55 @@
       const previewThumbnail = document.getElementById('previewThumbnail');
       const previewImage = document.getElementById('previewImage');
 
-      // Suggested movies
-      function getCachedCatalog() {
-        for (const key of ['gojo_catalog_v3', 'gojo_catalog_v2']) {
-          try {
-            const raw = localStorage.getItem(key);
-            const cat = raw ? JSON.parse(raw) : null;
-            if (cat?.items?.length) return cat;
-          } catch {}
-        }
-        return null;
-      }
-      const FALLBACK_SUGGESTIONS = [
-        { title: "ጥላዬ (Telaye) - Full Amharic Movie 2022", videoId: "SxVyFHDyrRI" },
-        { title: "ወዳጅ (Wedaj) - Full Ethiopian Movie 2023", videoId: "phmIAGUlKVg" },
-        { title: "ወይኔ የአራዳ ልጅ 5 (Wayne Yarada Lij 5) - Full Movie 2020", videoId: "u4n1bBSWPHY" },
-        { title: "ባለ ክራር (Bale Kirar) - Ethiopian Full Movie 2024", videoId: "WIJU3F5Vrmc" }
-      ];
-      function loadSuggestedMovies() {
-        suggestedMoviesGrid.innerHTML = "";
-        let all = getCachedCatalog()?.items?.map(v => ({ title: v.title, videoId: v.videoId })) || FALLBACK_SUGGESTIONS;
-        all = all.filter(v => v.videoId !== videoId).slice(0, 8);
-        all.forEach(video => {
-          const card = document.createElement("div");
-          card.className = "video-card cursor-pointer";
-          card.innerHTML = `
-            <div class="relative" style="padding-bottom: 56.25%;">
-              <img src="https://img.youtube.com/vi/${video.videoId}/hqdefault.jpg"
-                   alt="${video.title.replace(/"/g, '&quot;')}"
-                   loading="lazy"
-                   class="absolute top-0 left-0 w-full h-full object-cover"/>
-              <div class="play-icon absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" aria-hidden="true">
-                <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <circle cx="24" cy="24" r="22" fill="url(#grad1)" fill-opacity="0.7" />
-                  <path d="M20 17L33 24L20 31V17Z" fill="white" />
-                  <defs>
-                    <linearGradient id="grad1" x1="0" y1="0" x2="48" y2="48" gradientUnits="userSpaceOnUse">
-                      <stop stop-color="#4fd1c5" />
-                      <stop offset="1" stop-color="#2c7a7b" />
-                    </linearGradient>
-                  </defs>
-                </svg>
-              </div>
-            </div>
-            <h3 class="mt-2 text-sm font-medium text-gray-200" title="${video.title.replace(/"/g, '&quot;')}">
-              ${video.title.replace(/</g, '&lt;').replace(/>/g, '&gt;')}
-            </h3>
-          `;
-          card.addEventListener("click", () => {
-            const url = `player.html?v=${encodeURIComponent(video.videoId)}&t=${encodeURIComponent(video.title)}&lang=${encodeURIComponent(currentLang)}`;
-            window.location.href = url;
-          });
-          suggestedMoviesGrid.appendChild(card);
-          setTimeout(() => card.classList.add("loaded"), 50);
-        });
-      }
-      loadSuggestedMovies();
+      // Insert Like & Save buttons
+      const controls = document.getElementById('controls');
+      const likeBtn = document.createElement('button');
+      likeBtn.className = 'icon-button';
+      likeBtn.title = 'Like';
+      likeBtn.setAttribute('aria-label','Like');
+      likeBtn.textContent = '❤';
+      const saveBtn = document.createElement('button');
+      saveBtn.className = 'icon-button';
+      saveBtn.title = 'Watch later';
+      saveBtn.setAttribute('aria-label','Watch later');
+      saveBtn.textContent = '⏱';
+      controls.insertBefore(saveBtn, controls.firstChild);
+      controls.insertBefore(likeBtn, controls.firstChild);
 
       info.textContent = title;
 
       // Player state
-      let player, duration = 0, ready = false, isMuted = false, isFullscreen = false;
-      let progressInterval = null, userSeeking = false, lastSavedTime = 0;
+      let player, duration = 0, ready = false, isMuted = false;
+      let progressInterval = null, lastSavedTime = 0;
 
-      const playIconSVG = `<svg viewBox="0 0 24 24" fill="#4fd1c5" xmlns="http://www.w3.org/2000/svg"><path d="M8 5v14l11-7z"/></svg>`;
-      const pauseIconSVG = `<svg viewBox="0 0 24 24" fill="#4fd1c5" xmlns="http://www.w3.org/2000/svg"><rect x="6" y="5" width="4" height="14"/><rect x="14" y="5" width="4" height="14"/></svg>`;
-      const volumeIconSVG = `<svg viewBox="0 0 24 24" fill="#4fd1c5" xmlns="http://www.w3.org/2000/svg"><path d="M3 9v6h4l5 5V4L7 9H3z"/><path d="M16.5 12c0-1.77-1-3.29-2.5-4.03v8.06A4.97 4.97 0 0 0 16.5 12z"/></svg>`;
-      const muteIconSVG = `<svg viewBox="0 0 24 24" fill="#4fd1c5" xmlns="http://www.w3.org/2000/svg"><path d="M3 9v6h4l5 5V4L7 9H3z"/><line x1="19" y1="5" x2="5" y2="19" stroke="#4fd1c5" stroke-width="2"/><line x1="5" y1="5" x2="19" y2="19" stroke="#4fd1c5" stroke-width="2"/></svg>`;
-
-      function updatePlayPauseBtn(isPlaying) { playPauseBtn.innerHTML = isPlaying ? pauseIconSVG : playIconSVG; }
+      function updatePlayPauseBtn(isPlaying) {
+        playPauseBtn.innerHTML = isPlaying
+          ? `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><rect x="6" y="5" width="4" height="14" fill="currentColor"/><rect x="14" y="5" width="4" height="14" fill="currentColor"/></svg>`
+          : `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path fill="currentColor" d="M8 5v14l11-7z"/></svg>`;
+      }
       function showPause() { pauseCover.classList.remove('hidden'); }
       function hidePause() { pauseCover.classList.add('hidden'); }
       function updateVolumeSliderBackground(value) {
         const percentage = value;
-        volumeSlider.style.background = `linear-gradient(to right, #4fd1c5 0%, #4fd1c5 ${percentage}%, #444c71 ${percentage}%, #444c71 100%)`;
+        volumeSlider.style.background = `linear-gradient(to right, var(--accent-primary) 0%, var(--accent-primary) ${percentage}%, #444 0, #444 100%)`;
       }
-      function updateMuteBtnIcon() { muteBtn.innerHTML = isMuted ? muteIconSVG : volumeIconSVG; }
-
       function ensurePlay() {
         if (!player) return;
         try { player.playVideo(); } catch {}
         setTimeout(() => {
           if (player.getPlayerState && player.getPlayerState() !== YT.PlayerState.PLAYING) {
-            try { player.mute(); isMuted = true; updateMuteBtnIcon(); player.playVideo(); } catch {}
+            try { player.mute(); isMuted = true; muteBtn.classList.add('active'); player.playVideo(); } catch {}
           }
         }, 300);
-        hidePause();
-        updatePlayPauseBtn(true);
+        hidePause(); updatePlayPauseBtn(true);
       }
 
+      // Load YouTube API
       window.onYouTubeIframeAPIReady = function () {
         player = new YT.Player("player", {
           videoId,
-          playerVars: {
-            modestbranding: 1, rel: 0, iv_load_policy: 3, controls: 0, disablekb: 1,
-            fs: 1, autoplay: 0, playsinline: 1, origin: location.origin
-          },
-          events: {
-            onReady: onPlayerReady,
-            onStateChange: onStateChange,
-            onError: onPlayerError
-          }
+          playerVars: { modestbranding: 1, rel: 0, iv_load_policy: 3, controls: 0, disablekb: 1, fs: 1, autoplay: 0, playsinline: 1, origin: location.origin },
+          events: { onReady: onPlayerReady, onStateChange: onStateChange, onError: onPlayerError }
         });
       };
       const tag = document.createElement("script");
@@ -278,7 +212,7 @@
         volumeSlider.value = isNaN(savedVol) ? 100 : savedVol;
         isMuted = savedMuted || savedVol === 0;
         if (isMuted) player.mute(); else player.unMute();
-        updateMuteBtnIcon();
+        if (isMuted) muteBtn.classList.add('active'); else muteBtn.classList.remove('active');
         updateVolumeSliderBackground(volumeSlider.value);
 
         // Resume prompt
@@ -293,56 +227,57 @@
           resumeBox.classList.remove('hidden');
           resumeYes.onclick = () => { player.seekTo(resumeAt, true); ensurePlay(); resumeBox.classList.add('hidden'); };
           resumeNo.onclick = () => { player.seekTo(0, true); ensurePlay(); resumeBox.classList.add('hidden'); };
-        } else {
-          resumeBox.classList.add('hidden');
-        }
+        } else { resumeBox.classList.add('hidden'); }
+
+        // Prefill Like/Save states
+        (async () => {
+          const { data: { user } } = await supabase.auth.getUser();
+          if (!user) return;
+          const [l, w] = await Promise.all([
+            supabase.from('likes').select('video_id').eq('user_id', user.id).eq('video_id', videoId).maybeSingle(),
+            supabase.from('watch_later').select('video_id').eq('user_id', user.id).eq('video_id', videoId).maybeSingle()
+          ]);
+          const liked = !!l.data, saved = !!w.data;
+          likeBtn.classList.toggle('active', liked);
+          saveBtn.classList.toggle('active', saved);
+        })();
       }
 
       function onStateChange(e) {
-        switch (e.data) {
-          case YT.PlayerState.PLAYING:
-            hidePause();
-            updatePlayPauseBtn(true);
-            if (interactionShield) interactionShield.style.pointerEvents = 'auto';
-            startProgressUpdater();
-            break;
-          case YT.PlayerState.PAUSED:
-            showPause();
-            updatePlayPauseBtn(false);
-            if (interactionShield) interactionShield.style.pointerEvents = 'none';
-            stopProgressUpdater();
-            break;
-          case YT.PlayerState.ENDED:
-            showPause();
-            updatePlayPauseBtn(false);
-            if (interactionShield) interactionShield.style.pointerEvents = 'none';
-            stopProgressUpdater();
-            updateProgressBar(100);
-            if (duration) updateTimeDisplay(duration);
-            break;
+        if (e.data === YT.PlayerState.PLAYING) {
+          hidePause(); updatePlayPauseBtn(true);
+          if (interactionShield) interactionShield.style.pointerEvents = 'auto';
+          startProgressUpdater();
+          maybeTrackStart();
+        } else if (e.data === YT.PlayerState.PAUSED) {
+          showPause(); updatePlayPauseBtn(false);
+          if (interactionShield) interactionShield.style.pointerEvents = 'none';
+          stopProgressUpdater();
+          upsertView(false);
+        } else if (e.data === YT.PlayerState.ENDED) {
+          showPause(); updatePlayPauseBtn(false);
+          if (interactionShield) interactionShield.style.pointerEvents = 'none';
+          stopProgressUpdater();
+          updateProgressBar(100);
+          if (duration) updateTimeDisplay(duration);
+          upsertView(true);
         }
       }
       function onPlayerError(err) {
         console.warn('YouTube player error', err);
-        showPause();
-        updatePlayPauseBtn(false);
+        showPause(); updatePlayPauseBtn(false);
       }
 
-      // Interaction shield: toggle play/pause, block YT UI
+      // Interaction shield
       if (interactionShield) {
-        interactionShield.style.pointerEvents = 'none'; // enabled when playing
+        interactionShield.style.pointerEvents = 'none';
         interactionShield.addEventListener('click', (e) => {
-          e.preventDefault();
-          e.stopPropagation();
+          e.preventDefault(); e.stopPropagation();
           if (!ready || !player) return;
           const s = player.getPlayerState ? player.getPlayerState() : null;
-          if (s === YT.PlayerState.PLAYING) player.pauseVideo();
-          else ensurePlay();
+          if (s === YT.PlayerState.PLAYING) player.pauseVideo(); else ensurePlay();
         });
-        interactionShield.addEventListener('touchstart', (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-        }, { passive: false });
+        interactionShield.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); }, { passive: false });
         interactionShield.addEventListener('contextmenu', (e) => e.preventDefault());
       }
 
@@ -351,16 +286,14 @@
       playPauseBtn.addEventListener("click", () => {
         if (!player || !ready) return;
         const s = player.getPlayerState();
-        if (s === YT.PlayerState.PLAYING) player.pauseVideo();
-        else ensurePlay();
+        if (s === YT.PlayerState.PLAYING) player.pauseVideo(); else ensurePlay();
       });
 
       muteBtn.addEventListener("click", () => {
         if (!player) return;
-        if (isMuted) { player.unMute(); isMuted = false; if (volumeSlider.value === "0") { volumeSlider.value = "30"; player.setVolume(30); } }
-        else { player.mute(); isMuted = true; }
+        if (isMuted) { player.unMute(); isMuted = false; muteBtn.classList.remove('active'); if (volumeSlider.value === "0") { volumeSlider.value = "30"; player.setVolume(30); } }
+        else { player.mute(); isMuted = true; muteBtn.classList.add('active'); }
         localStorage.setItem('gojo_muted', isMuted ? 'true' : 'false');
-        updateMuteBtnIcon();
         updateVolumeSliderBackground(volumeSlider.value);
       });
 
@@ -372,20 +305,16 @@
         if (isMuted) player.mute(); else player.unMute();
         localStorage.setItem('gojo_volume', String(vol));
         localStorage.setItem('gojo_muted', isMuted ? 'true' : 'false');
-        updateMuteBtnIcon();
+        if (isMuted) muteBtn.classList.add('active'); else muteBtn.classList.remove('active');
         updateVolumeSliderBackground(vol);
       });
 
       maximizeBtn.addEventListener("click", () => {
         const el = document.getElementById("playerContainer");
-        if (!document.fullscreenElement) {
-          (el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen || el.msRequestFullscreen)?.call(el);
-        } else {
-          (document.exitFullscreen || document.webkitExitFullscreen || document.mozCancelFullScreen || document.msExitFullscreen)?.call(document);
-        }
+        if (!document.fullscreenElement) (el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen || el.msRequestFullscreen)?.call(el);
+        else (document.exitFullscreen || document.webkitExitFullscreen || document.mozCancelFullScreen || document.msExitFullscreen)?.call(document);
       });
 
-      // Progress & time
       function updateProgressBar(percent) {
         percent = Math.min(Math.max(percent, 0), 100);
         progressBar.style.width = percent + "%";
@@ -409,28 +338,23 @@
             updateProgressBar(duration ? (current / duration) * 100 : 0);
             updateTimeDisplay(current);
             const t = Math.floor(current);
-            if (t !== lastSavedTime) {
+            const prev = lastSavedTime;
+            if (t !== prev) {
               lastSavedTime = t;
               localStorage.setItem(`gojo_lastpos_${videoId}`, String(t));
             }
           }
         }, 500);
       }
-      function stopProgressUpdater() {
-        if (progressInterval) { clearInterval(progressInterval); progressInterval = null; }
-      }
+      function stopProgressUpdater() { if (progressInterval) { clearInterval(progressInterval); progressInterval = null; } }
 
-      progressContainer.addEventListener("mousedown", () => { userSeeking = true; });
       progressContainer.addEventListener("mouseup", (e) => {
         if (!player || !duration) return;
         const rect = progressContainer.getBoundingClientRect();
         const ratio = Math.min(Math.max((e.clientX - rect.left) / rect.width, 0), 1);
         const t = ratio * duration;
         player.seekTo(t, true);
-        updateProgressBar(ratio * 100);
-        updateTimeDisplay(t);
-        userSeeking = false;
-        hidePause();
+        updateProgressBar(ratio * 100); updateTimeDisplay(t); hidePause();
       });
 
       // Scrub preview
@@ -446,23 +370,16 @@
 
       progressContainer.addEventListener("mousemove", (e) => {
         const rect = progressContainer.getBoundingClientRect();
-        let x = e.clientX - rect.left;
-        x = Math.min(Math.max(x, 0), rect.width);
+        let x = e.clientX - rect.left; x = Math.min(Math.max(x, 0), rect.width);
         const time = duration ? (x / rect.width) * duration : 0;
-
         let previewX = x - previewThumbnail.offsetWidth / 2;
         previewX = Math.min(Math.max(previewX, 0), rect.width - previewThumbnail.offsetWidth);
         previewThumbnail.style.left = previewX + "px";
         previewThumbnail.style.display = duration ? "block" : "none";
-
         const percentage = duration ? (time / duration) : 0;
         let idx = percentage > 0.75 ? 3 : percentage > 0.5 ? 2 : percentage > 0.25 ? 1 : 0;
         const url = preloadedThumbs[idx]?.src || `https://img.youtube.com/vi/${videoId}/${idx}.jpg`;
-        if (previewImage.src !== url) {
-          previewImage.style.opacity = '0';
-          previewImage.src = url;
-          setTimeout(() => { previewImage.style.opacity = '1'; }, 50);
-        }
+        if (previewImage.src !== url) { previewImage.style.opacity = '0'; previewImage.src = url; setTimeout(() => { previewImage.style.opacity = '1'; }, 50); }
       });
       progressContainer.addEventListener("mouseleave", () => { previewThumbnail.style.display = "none"; });
 
@@ -476,9 +393,7 @@
         localStorage.setItem('gojo_speed', String(rate));
       }
       speedBtn.addEventListener('click', () => { speedMenu.classList.toggle('hidden'); });
-      document.addEventListener('click', (e) => {
-        if (!speedMenu.contains(e.target) && e.target !== speedBtn) speedMenu.classList.add('hidden');
-      });
+      document.addEventListener('click', (e) => { if (!speedMenu.contains(e.target) && e.target !== speedBtn) speedMenu.classList.add('hidden'); });
       speedMenu.querySelectorAll('button').forEach(btn => {
         btn.addEventListener('click', () => {
           const rate = parseFloat(btn.dataset.speed);
@@ -488,14 +403,12 @@
         });
       });
 
-      // PiP hint
       pipBtn.addEventListener('click', () => {
         const original = pipBtn.title;
         pipBtn.title = "Right-click twice on the video and choose Picture-in-Picture";
         setTimeout(() => { pipBtn.title = original; }, 6000);
       });
 
-      // Copy link
       copyLinkBtn.addEventListener("click", async () => {
         const url = new URL(window.location.href);
         const current = Math.floor(player?.getCurrentTime?.() || 0);
@@ -504,22 +417,15 @@
         url.searchParams.set('time', current);
         url.searchParams.set('lang', currentLang);
         try {
-          if (navigator.clipboard && window.isSecureContext) {
-            await navigator.clipboard.writeText(url.toString());
-          } else {
-            const temp = document.createElement('textarea');
-            temp.value = url.toString();
-            document.body.appendChild(temp);
-            temp.select();
-            document.execCommand('copy');
-            temp.remove();
+          if (navigator.clipboard && window.isSecureContext) await navigator.clipboard.writeText(url.toString());
+          else {
+            const temp = document.createElement('textarea'); temp.value = url.toString();
+            document.body.appendChild(temp); temp.select(); document.execCommand('copy'); temp.remove();
           }
-          copyLinkBtn.title = "Copied!";
-          setTimeout(() => { copyLinkBtn.title = "Copy link"; }, 1200);
+          copyLinkBtn.title = "Copied!"; setTimeout(() => { copyLinkBtn.title = "Copy link"; }, 1200);
         } catch { alert("Failed to copy link."); }
       });
 
-      // Back
       backBtn.addEventListener("click", (e) => {
         e.preventDefault();
         try {
@@ -535,13 +441,11 @@
         if (e.ctrlKey || e.metaKey || e.altKey) return;
 
         const key = e.key;
-        if (key === ' ' || key.toLowerCase() === 'k') { e.preventDefault(); if (player?.getPlayerState() === YT.PlayerState.PLAYING) player.pauseVideo(); else ensurePlay(); }
+        if (key === ' ' || key.toLowerCase() === 'k') { e.preventDefault(); const s = player?.getPlayerState(); if (s === YT.PlayerState.PLAYING) player.pauseVideo(); else ensurePlay(); }
         else if (key.toLowerCase() === 'm') { e.preventDefault(); muteBtn.click(); }
         else if (key.toLowerCase() === 'f') { e.preventDefault(); maximizeBtn.click(); }
         else if (key.toLowerCase() === 'j') { e.preventDefault(); seekRelative(-10); }
         else if (key.toLowerCase() === 'l') { e.preventDefault(); seekRelative(10); }
-        else if (key === '>' || (key === '.' && e.shiftKey)) { e.preventDefault(); changeSpeed(+1); }
-        else if (key === '<' || (key === ',' && e.shiftKey)) { e.preventDefault(); changeSpeed(-1); }
         else if (/^[0-9]$/.test(key)) { e.preventDefault(); jumpToPercent(parseInt(key,10) * 10); }
       });
       function seekRelative(delta) {
@@ -549,30 +453,110 @@
         const current = player.getCurrentTime();
         let next = Math.min(Math.max(current + delta, 0), duration);
         player.seekTo(next, true);
-        updateProgressBar((next / duration) * 100);
-        updateTimeDisplay(next);
-        hidePause();
-      }
-      function changeSpeed(delta) {
-        const rates = player.getAvailablePlaybackRates ? player.getAvailablePlaybackRates() : [0.5,0.75,1,1.25,1.5,1.75,2];
-        let current = player.getPlaybackRate ? player.getPlaybackRate() : 1;
-        let idx = rates.indexOf(current);
-        if (idx === -1) idx = rates.indexOf(1);
-        idx = Math.min(Math.max(idx + delta, 0), rates.length - 1);
-        const newRate = rates[idx];
-        if (player?.setPlaybackRate) player.setPlaybackRate(newRate);
-        updateSpeedUI(newRate);
+        updateProgressBar((next / duration) * 100); updateTimeDisplay(next); hidePause();
       }
       function jumpToPercent(percent) {
         if (!player || !duration) return;
         const t = (percent / 100) * duration;
         player.seekTo(t, true);
-        updateProgressBar(percent);
-        updateTimeDisplay(t);
-        hidePause();
+        updateProgressBar(percent); updateTimeDisplay(t); hidePause();
       }
 
-      // Safety log
+      // Like/Save handlers
+      async function ensureAuthed() {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) { alert('Login required'); return null; }
+        return user;
+      }
+      likeBtn.addEventListener('click', async () => {
+        const user = await ensureAuthed(); if (!user) return;
+        const { data } = await supabase.from('likes').select('video_id').eq('user_id', user.id).eq('video_id', videoId).maybeSingle();
+        if (data) {
+          await supabase.from('likes').delete().match({ user_id: user.id, video_id: videoId });
+          likeBtn.classList.remove('active');
+        } else {
+          await supabase.from('likes').upsert({ user_id: user.id, video_id: videoId, title });
+          likeBtn.classList.add('active');
+        }
+      });
+      saveBtn.addEventListener('click', async () => {
+        const user = await ensureAuthed(); if (!user) return;
+        const { data } = await supabase.from('watch_later').select('video_id').eq('user_id', user.id).eq('video_id', videoId).maybeSingle();
+        if (data) {
+          await supabase.from('watch_later').delete().match({ user_id: user.id, video_id: videoId });
+          saveBtn.classList.remove('active');
+        } else {
+          await supabase.from('watch_later').upsert({ user_id: user.id, video_id: videoId, title });
+          saveBtn.classList.add('active');
+        }
+      });
+
+      // Suggested movies (from cached catalog)
+      function getCachedCatalog() {
+        for (const key of ['gojo_catalog_v4','gojo_catalog_v3','gojo_catalog_v2']) {
+          try {
+            const raw = localStorage.getItem(key);
+            const cat = raw ? JSON.parse(raw) : null;
+            if (cat?.items?.length) return cat;
+          } catch {}
+        }
+        return null;
+      }
+      const FALLBACK_SUGGESTIONS = [
+        { title: "ጥላዬ (Telaye) - Full Amharic Movie 2022", videoId: "SxVyFHDyrRI" },
+        { title: "ወዳጅ (Wedaj) - Full Ethiopian Movie 2023", videoId: "phmIAGUlKVg" },
+        { title: "ወይኔ የአራዳ ልጅ 5 (Wayne Yarada Lij 5) - Full Movie 2020", videoId: "u4n1bBSWPHY" },
+        { title: "ባለ ክራር (Bale Kirar) - Ethiopian Full Movie 2024", videoId: "WIJU3F5Vrmc" }
+      ];
+      function loadSuggestedMovies() {
+        suggestedMoviesGrid.innerHTML = "";
+        let all = getCachedCatalog()?.items?.map(v => ({ title: v.title, videoId: v.videoId })) || FALLBACK_SUGGESTIONS;
+        all = all.filter(v => v.videoId !== videoId).slice(0, 8);
+        all.forEach(video => {
+          const card = document.createElement("div");
+          card.className = "video-card cursor-pointer loaded";
+          card.innerHTML = `
+            <div class="relative" style="padding-bottom: 56.25%;">
+              <img src="https://img.youtube.com/vi/${video.videoId}/hqdefault.jpg" alt="${video.title.replace(/"/g, '&quot;')}" loading="lazy" class="absolute top-0 left-0 w-full h-full object-cover"/>
+              <div class="play-icon absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" aria-hidden="true">
+                <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <circle cx="24" cy="24" r="22" fill="rgba(0,0,0,0.7)" />
+                  <path d="M20 17L33 24L20 31V17Z" fill="white" />
+                </svg>
+              </div>
+            </div>
+            <h3 class="mt-2 text-sm font-medium" title="${video.title.replace(/"/g, '&quot;')}">${video.title.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</h3>
+          `;
+          card.addEventListener("click", () => {
+            const url = `player.html?v=${encodeURIComponent(video.videoId)}&t=${encodeURIComponent(video.title)}&lang=${encodeURIComponent(currentLang)}`;
+            window.location.href = url;
+          });
+          suggestedMoviesGrid.appendChild(card);
+        });
+      }
+      loadSuggestedMovies();
+
+      // View tracking
+      function safeNow() { return Math.floor(player?.getCurrentTime?.() || 0); }
+      let trackedStart = false;
+      function maybeTrackStart() {
+        if (trackedStart) return;
+        if (safeNow() >= 30) { trackedStart = true; upsertView(false); }
+      }
+      async function upsertView(completed) {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+        const watched_seconds = safeNow();
+        try {
+          await supabase.from('views').upsert(
+            { user_id: user.id, video_id: videoId, title, watched_seconds, completed },
+            { onConflict: 'user_id,video_id' }
+          );
+        } catch (e) {
+          console.warn('view upsert failed', e.message);
+        }
+      }
+
       window.addEventListener('error', (e) => console.error('Script error:', e.message));
     })();
   </script>
