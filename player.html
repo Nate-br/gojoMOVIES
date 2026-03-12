@@ -8,7 +8,7 @@
   <!-- Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Noto+Sans+Ethiopic:wght@400;600;700&family=Noto+Serif+Ethiopic:wght@600;700&family=Abyssinica+SIL:wght@400;700&display=swap" rel="stylesheet">
 
-  <!-- Supabase (fill your keys) -->
+  <!-- Supabase -->
   <script type="module">
     import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
     const SUPABASE_URL = 'https://fuidgrbtqnjphhyiouxn.supabase.co';
@@ -47,7 +47,6 @@
   </div>
 
   <div id="controls">
-    <!-- Like & Save will be injected via script before play/pause -->
     <button id="playPauseBtn" aria-label="Play/Pause" class="icon-button" title="Play/Pause" type="button">
       <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path fill="currentColor" d="M8 5v14l11-7z"/></svg>
     </button>
@@ -96,9 +95,16 @@
 
   <button id="backBtn" aria-label="Back to Gojo Films" type="button">Back to Gojo Films</button>
 
-  <section id="suggestedMovies" class="container mx-auto p-6">
-    <h2 id="suggestedHeading" class="text-2xl font-semibold mb-6">Suggested Movies</h2>
-    <div id="suggestedMoviesGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"></div>
+  <!-- SUGGESTED MOVIES SECTION -->
+  <section id="suggestedMovies">
+    <h2 id="suggestedHeading">ተመሳሳይ ፊልሞች</h2>
+    <div id="suggestedMoviesGrid" role="list" aria-label="Suggested movies"></div>
+    <button id="seeMoreBtn" class="suggested-section__more" type="button">
+      ተጨማሪ ፊልሞች ይመልከቱ
+      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/>
+      </svg>
+    </button>
   </section>
 
   <script>
@@ -138,6 +144,7 @@
       const backBtn = document.getElementById('backBtn');
       const previewThumbnail = document.getElementById('previewThumbnail');
       const previewImage = document.getElementById('previewImage');
+      const seeMoreBtn = document.getElementById('seeMoreBtn');
 
       // Insert Like & Save buttons
       const controls = document.getElementById('controls');
@@ -145,12 +152,14 @@
       likeBtn.className = 'icon-button';
       likeBtn.title = 'Like';
       likeBtn.setAttribute('aria-label','Like');
-      likeBtn.textContent = '❤';
+      likeBtn.innerHTML = `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path fill="currentColor" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>`;
+      
       const saveBtn = document.createElement('button');
       saveBtn.className = 'icon-button';
       saveBtn.title = 'Watch later';
       saveBtn.setAttribute('aria-label','Watch later');
-      saveBtn.textContent = '⏱';
+      saveBtn.innerHTML = `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path fill="currentColor" d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm4.2 14.2L11 13V7h1.5v5.2l4.5 2.7-.8 1.3z"/></svg>`;
+      
       controls.insertBefore(saveBtn, controls.firstChild);
       controls.insertBefore(likeBtn, controls.firstChild);
 
@@ -169,7 +178,7 @@
       function hidePause() { pauseCover.classList.add('hidden'); }
       function updateVolumeSliderBackground(value) {
         const percentage = value;
-        volumeSlider.style.background = `linear-gradient(to right, var(--accent-primary) 0%, var(--accent-primary) ${percentage}%, #444 0, #444 100%)`;
+        volumeSlider.style.background = `linear-gradient(to right, var(--accent-primary) 0%, var(--accent-primary) ${percentage}%, #444 ${percentage}%, #444 100%)`;
       }
       function ensurePlay() {
         if (!player) return;
@@ -322,8 +331,10 @@
       }
       function formatTime(s) {
         s = Math.floor(s || 0);
-        const m = Math.floor(s / 60);
+        const h = Math.floor(s / 3600);
+        const m = Math.floor((s % 3600) / 60);
         const sec = s % 60;
+        if (h > 0) return h + ":" + (m < 10 ? "0" + m : m) + ":" + (sec < 10 ? "0" + sec : sec);
         return m + ":" + (sec < 10 ? "0" + sec : sec);
       }
       function updateTimeDisplay(current) {
@@ -352,6 +363,17 @@
         if (!player || !duration) return;
         const rect = progressContainer.getBoundingClientRect();
         const ratio = Math.min(Math.max((e.clientX - rect.left) / rect.width, 0), 1);
+        const t = ratio * duration;
+        player.seekTo(t, true);
+        updateProgressBar(ratio * 100); updateTimeDisplay(t); hidePause();
+      });
+
+      // Touch seek support
+      progressContainer.addEventListener("touchend", (e) => {
+        if (!player || !duration) return;
+        const touch = e.changedTouches[0];
+        const rect = progressContainer.getBoundingClientRect();
+        const ratio = Math.min(Math.max((touch.clientX - rect.left) / rect.width, 0), 1);
         const t = ratio * duration;
         player.seekTo(t, true);
         updateProgressBar(ratio * 100); updateTimeDisplay(t); hidePause();
@@ -403,6 +425,13 @@
         });
       });
 
+      // Load saved speed
+      const savedSpeed = parseFloat(localStorage.getItem('gojo_speed') || '1');
+      if (savedSpeed && savedSpeed !== 1) {
+        updateSpeedUI(savedSpeed);
+        setTimeout(() => { if (player?.setPlaybackRate) player.setPlaybackRate(savedSpeed); }, 1000);
+      }
+
       pipBtn.addEventListener('click', () => {
         const original = pipBtn.title;
         pipBtn.title = "Right-click twice on the video and choose Picture-in-Picture";
@@ -434,6 +463,10 @@
         location.href = "index.html";
       });
 
+      seeMoreBtn.addEventListener("click", () => {
+        window.location.href = "index.html";
+      });
+
       // Keyboard shortcuts
       document.addEventListener('keydown', (e) => {
         const tag = document.activeElement?.tagName;
@@ -446,6 +479,10 @@
         else if (key.toLowerCase() === 'f') { e.preventDefault(); maximizeBtn.click(); }
         else if (key.toLowerCase() === 'j') { e.preventDefault(); seekRelative(-10); }
         else if (key.toLowerCase() === 'l') { e.preventDefault(); seekRelative(10); }
+        else if (key === 'ArrowLeft') { e.preventDefault(); seekRelative(-5); }
+        else if (key === 'ArrowRight') { e.preventDefault(); seekRelative(5); }
+        else if (key === 'ArrowUp') { e.preventDefault(); adjustVolume(10); }
+        else if (key === 'ArrowDown') { e.preventDefault(); adjustVolume(-10); }
         else if (/^[0-9]$/.test(key)) { e.preventDefault(); jumpToPercent(parseInt(key,10) * 10); }
       });
       function seekRelative(delta) {
@@ -460,6 +497,19 @@
         const t = (percent / 100) * duration;
         player.seekTo(t, true);
         updateProgressBar(percent); updateTimeDisplay(t); hidePause();
+      }
+      function adjustVolume(delta) {
+        if (!player) return;
+        let vol = parseInt(volumeSlider.value, 10) + delta;
+        vol = Math.min(Math.max(vol, 0), 100);
+        volumeSlider.value = vol;
+        player.setVolume(vol);
+        isMuted = vol === 0;
+        if (isMuted) { player.mute(); muteBtn.classList.add('active'); }
+        else { player.unMute(); muteBtn.classList.remove('active'); }
+        localStorage.setItem('gojo_volume', String(vol));
+        localStorage.setItem('gojo_muted', isMuted ? 'true' : 'false');
+        updateVolumeSliderBackground(vol);
       }
 
       // Like/Save handlers
@@ -491,7 +541,7 @@
         }
       });
 
-      // Suggested movies (from cached catalog)
+      // ========== SUGGESTED MOVIES ==========
       function getCachedCatalog() {
         for (const key of ['gojo_catalog_v4','gojo_catalog_v3','gojo_catalog_v2']) {
           try {
@@ -502,38 +552,136 @@
         }
         return null;
       }
+
       const FALLBACK_SUGGESTIONS = [
         { title: "ጥላዬ (Telaye) - Full Amharic Movie 2022", videoId: "SxVyFHDyrRI" },
         { title: "ወዳጅ (Wedaj) - Full Ethiopian Movie 2023", videoId: "phmIAGUlKVg" },
-        { title: "ወይኔ የአራዳ ልጅ 5 (Wayne Yarada Lij 5) - Full Movie 2020", videoId: "u4n1bBSWPHY" },
-        { title: "ባለ ክራር (Bale Kirar) - Ethiopian Full Movie 2024", videoId: "WIJU3F5Vrmc" }
+        { title: "ወይኔ የአራዳ ልጅ 5 - Full Movie 2020", videoId: "u4n1bBSWPHY" },
+        { title: "ባለ ክራር (Bale Kirar) - Ethiopian Full Movie 2024", videoId: "WIJU3F5Vrmc" },
+        { title: "የእናቴ ፀሎት - Full Amharic Movie", videoId: "example1" },
+        { title: "ፍቅር እስከ መቃብር - Ethiopian Movie", videoId: "example2" }
       ];
+
       function loadSuggestedMovies() {
         suggestedMoviesGrid.innerHTML = "";
-        let all = getCachedCatalog()?.items?.map(v => ({ title: v.title, videoId: v.videoId })) || FALLBACK_SUGGESTIONS;
-        all = all.filter(v => v.videoId !== videoId).slice(0, 8);
-        all.forEach(video => {
-          const card = document.createElement("div");
-          card.className = "video-card cursor-pointer loaded";
-          card.innerHTML = `
-            <div class="relative" style="padding-bottom: 56.25%;">
-              <img src="https://img.youtube.com/vi/${video.videoId}/hqdefault.jpg" alt="${video.title.replace(/"/g, '&quot;')}" loading="lazy" class="absolute top-0 left-0 w-full h-full object-cover"/>
-              <div class="play-icon absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" aria-hidden="true">
-                <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <circle cx="24" cy="24" r="22" fill="rgba(0,0,0,0.7)" />
-                  <path d="M20 17L33 24L20 31V17Z" fill="white" />
-                </svg>
-              </div>
+
+        // Show loading skeletons
+        for (let i = 0; i < 8; i++) {
+          const skeleton = document.createElement("div");
+          skeleton.className = "suggested-card loading";
+          skeleton.setAttribute("role", "listitem");
+          skeleton.innerHTML = `
+            <div class="suggested-card__thumbnail"></div>
+            <div class="suggested-card__info">
+              <h3 class="suggested-card__title">Loading...</h3>
+              <div class="suggested-card__meta"><span>--</span></div>
             </div>
-            <h3 class="mt-2 text-sm font-medium" title="${video.title.replace(/"/g, '&quot;')}">${video.title.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</h3>
           `;
-          card.addEventListener("click", () => {
-            const url = `player.html?v=${encodeURIComponent(video.videoId)}&t=${encodeURIComponent(video.title)}&lang=${encodeURIComponent(currentLang)}`;
-            window.location.href = url;
+          suggestedMoviesGrid.appendChild(skeleton);
+        }
+
+        // Load actual content
+        setTimeout(() => {
+          let all = getCachedCatalog()?.items?.map(v => ({
+            title: v.title,
+            videoId: v.videoId,
+            year: v.year || null,
+            duration: v.duration || null
+          })) || FALLBACK_SUGGESTIONS;
+
+          // Filter out current video and shuffle
+          all = all
+            .filter(v => v.videoId !== videoId && v.videoId !== 'example1' && v.videoId !== 'example2')
+            .sort(() => Math.random() - 0.5)
+            .slice(0, 8);
+
+          // If not enough, use fallbacks
+          if (all.length < 4) {
+            all = FALLBACK_SUGGESTIONS
+              .filter(v => v.videoId !== videoId && !v.videoId.startsWith('example'))
+              .slice(0, 8);
+          }
+
+          suggestedMoviesGrid.innerHTML = "";
+
+          all.forEach((video, index) => {
+            const card = document.createElement("div");
+            card.className = "suggested-card";
+            card.setAttribute("role", "listitem");
+            card.setAttribute("tabindex", "0");
+            card.setAttribute("aria-label", `Play ${video.title}`);
+
+            // Extract year from title if not provided
+            const yearMatch = video.title.match(/\b(20\d{2})\b/);
+            const displayYear = video.year || (yearMatch ? yearMatch[1] : null);
+
+            // Random duration for demo (you can remove this if you have real data)
+            const durationMinutes = video.duration || (Math.floor(Math.random() * 60) + 90);
+            const durationFormatted = Math.floor(durationMinutes / 60) + ":" + String(durationMinutes % 60).padStart(2, '0') + ":00";
+
+            card.innerHTML = `
+              <div class="suggested-card__thumbnail">
+                <img
+                  src="https://img.youtube.com/vi/${video.videoId}/mqdefault.jpg"
+                  alt="${video.title.replace(/"/g, '&quot;')}"
+                  loading="lazy"
+                  onerror="this.onerror=null; this.src='https://img.youtube.com/vi/${video.videoId}/hqdefault.jpg';"
+                />
+                <div class="suggested-card__overlay"></div>
+                <div class="suggested-card__play" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M8 5v14l11-7z"/>
+                  </svg>
+                </div>
+                <span class="suggested-card__badge">HD</span>
+              </div>
+              <div class="suggested-card__info">
+                <h3 class="suggested-card__title" title="${video.title.replace(/"/g, '&quot;')}">
+                  ${video.title.replace(/</g, '&lt;').replace(/>/g, '&gt;')}
+                </h3>
+                <div class="suggested-card__meta">
+                  ${displayYear ? `
+                    <span>
+                      <svg viewBox="0 0 24 24"><path fill="currentColor" d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11z"/></svg>
+                      ${displayYear}
+                    </span>
+                  ` : ''}
+                  <span>
+                    <svg viewBox="0 0 24 24"><path fill="currentColor" d="M18 4l2 4h-3l-2-4h-2l2 4h-3l-2-4H8l2 4H7L5 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V4h-4z"/></svg>
+                    ፊልም
+                  </span>
+                </div>
+              </div>
+            `;
+
+            // Click handler
+            card.addEventListener("click", () => {
+              const url = `player.html?v=${encodeURIComponent(video.videoId)}&t=${encodeURIComponent(video.title)}&lang=${encodeURIComponent(currentLang)}`;
+              window.location.href = url;
+            });
+
+            // Keyboard accessibility
+            card.addEventListener("keydown", (e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                card.click();
+              }
+            });
+
+            // Staggered fade-in animation
+            card.style.opacity = "0";
+            card.style.transform = "translateY(20px)";
+            suggestedMoviesGrid.appendChild(card);
+
+            setTimeout(() => {
+              card.style.transition = "opacity 0.4s ease, transform 0.4s ease";
+              card.style.opacity = "1";
+              card.style.transform = "translateY(0)";
+            }, index * 100);
           });
-          suggestedMoviesGrid.appendChild(card);
-        });
+        }, 400);
       }
+
       loadSuggestedMovies();
 
       // View tracking
@@ -562,4 +710,3 @@
   </script>
 </body>
 </html>
-
