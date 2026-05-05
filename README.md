@@ -1,68 +1,77 @@
 # ጎጆ films (gojoMOVIES)
 
-Ethiopian/Amharic movie streaming platform built with Supabase, YouTube API, and Vercel.
+A modern Ethiopian/Amharic movie streaming platform that aggregates and organizes content from YouTube, providing users with a curated viewing experience.
 
-## ⚠️ Security Notice
+## Overview
 
-**IMPORTANT**: If you cloned this repository before the security fixes, the Supabase credentials in the Git history are compromised. Follow the [SECURITY.md](./SECURITY.md) guide to rotate your keys immediately.
+gojoMOVIES is a full-stack web application designed to showcase Ethiopian and Amharic cinema. The platform features user authentication, personalized libraries, content categorization, and an intuitive browsing experience optimized for both desktop and mobile devices.
 
 ## Features
 
-- 🎬 Browse Ethiopian/Amharic movies from YouTube
-- 🔐 User authentication with Supabase
-- ❤️ Like and save movies to watch later
-- 📊 Admin dashboard for user management
-- 🎨 Modern, responsive UI with Amharic font support
-- 🔍 Search and filter movies by category
-- ⭐ Rate and review movies
-- 📱 Mobile-friendly design
+- Browse Ethiopian/Amharic movies from YouTube with intelligent categorization
+- User authentication and profile management
+- Personal library with likes, watch later, and viewing history
+- Admin dashboard for user management and platform configuration
+- Bilingual interface (English/Amharic) with proper Ethiopic script support
+- Advanced search and filtering capabilities
+- Rating and review system
+- Custom video player with keyboard shortcuts and playback controls
+- Responsive design optimized for all screen sizes
 
-## Tech Stack
+## Technology Stack
 
-- **Frontend**: Vanilla JavaScript, HTML5, CSS3
-- **Backend**: Vercel Serverless Functions
-- **Database**: Supabase (PostgreSQL)
-- **Authentication**: Supabase Auth
-- **Video Source**: YouTube Data API v3
-- **Hosting**: Vercel
+### Frontend
+- Vanilla JavaScript (ES6+)
+- HTML5 & CSS3
+- Supabase Client Library
 
-## Setup
+### Backend
+- Vercel Serverless Functions (Node.js)
+- YouTube Data API v3
+
+### Database & Authentication
+- Supabase (PostgreSQL)
+- Row Level Security (RLS)
+- Supabase Auth
+
+### Hosting & Deployment
+- Vercel
+
+## Architecture
+
+The application follows a serverless architecture with a static frontend and API endpoints deployed as Vercel Functions. User data is stored in Supabase with Row Level Security policies ensuring data isolation between users.
+
+## Setup Instructions
 
 ### Prerequisites
 
-- Node.js 18+ (for local development)
+- Node.js 18 or higher
 - Supabase account
-- YouTube Data API key
+- YouTube Data API v3 key
 - Vercel account (for deployment)
 
-### 1. Clone the Repository
+### Environment Configuration
+
+Create a `.env` file in the project root:
 
 ```bash
-git clone https://github.com/Nate-br/gojoMOVIES.git
-cd gojoMOVIES
-```
-
-### 2. Set Up Environment Variables
-
-```bash
-# Copy the example environment file
 cp .env.example .env
-
-# Edit .env with your actual credentials
-nano .env
 ```
 
-Required environment variables:
-- `SUPABASE_URL` - Your Supabase project URL
-- `SUPABASE_ANON_KEY` - Your Supabase anon/public key
-- `YT_API_KEY` - Your YouTube Data API v3 key
+Configure the following environment variables:
 
-### 3. Set Up Supabase Database
+```env
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_ANON_KEY=your-supabase-anon-key
+YT_API_KEY=your-youtube-api-key
+```
 
-Run the following SQL in your Supabase SQL Editor:
+### Database Setup
+
+Execute the following SQL in your Supabase SQL Editor to create the required tables:
 
 ```sql
--- Create profiles table
+-- User profiles
 CREATE TABLE profiles (
   id UUID REFERENCES auth.users PRIMARY KEY,
   email TEXT,
@@ -71,7 +80,7 @@ CREATE TABLE profiles (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Create likes table
+-- User likes
 CREATE TABLE likes (
   user_id UUID REFERENCES auth.users,
   video_id TEXT NOT NULL,
@@ -80,7 +89,7 @@ CREATE TABLE likes (
   PRIMARY KEY (user_id, video_id)
 );
 
--- Create watch_later table
+-- Watch later queue
 CREATE TABLE watch_later (
   user_id UUID REFERENCES auth.users,
   video_id TEXT NOT NULL,
@@ -89,7 +98,7 @@ CREATE TABLE watch_later (
   PRIMARY KEY (user_id, video_id)
 );
 
--- Create views table
+-- Viewing history
 CREATE TABLE views (
   user_id UUID REFERENCES auth.users,
   video_id TEXT NOT NULL,
@@ -100,14 +109,14 @@ CREATE TABLE views (
   PRIMARY KEY (user_id, video_id)
 );
 
--- Create configs table (for site settings)
+-- Site configuration
 CREATE TABLE configs (
   key TEXT PRIMARY KEY,
   value JSONB,
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Enable Row Level Security (CRITICAL!)
+-- Enable Row Level Security
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE likes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE watch_later ENABLE ROW LEVEL SECURITY;
@@ -115,71 +124,72 @@ ALTER TABLE views ENABLE ROW LEVEL SECURITY;
 ALTER TABLE configs ENABLE ROW LEVEL SECURITY;
 ```
 
-**IMPORTANT**: Set up RLS policies as described in [SECURITY.md](./SECURITY.md) to secure your database.
+Configure Row Level Security policies according to your security requirements. Refer to the Supabase documentation for RLS policy examples.
 
-### 4. Local Development
+### Local Development
+
+Install the Vercel CLI and start the development server:
 
 ```bash
-# Install Vercel CLI
-npm i -g vercel
-
-# Run development server
+npm install -g vercel
 vercel dev
 ```
 
-Visit `http://localhost:3000`
+The application will be available at `http://localhost:3000`
 
-### 5. Deploy to Vercel
+### Production Deployment
+
+Deploy to Vercel:
 
 ```bash
-# Login to Vercel
 vercel login
-
-# Deploy
-vercel
-
-# Deploy to production
 vercel --prod
 ```
 
-**Don't forget**: Set environment variables in Vercel dashboard before deploying!
+Ensure all environment variables are configured in the Vercel dashboard under Project Settings → Environment Variables.
 
 ## Project Structure
 
 ```
 gojoMOVIES/
 ├── api/
-│   ├── catalog.js      # YouTube API integration
-│   ├── config.js       # Serves Supabase config to frontend
+│   ├── catalog.js      # YouTube API integration and content aggregation
+│   ├── config.js       # Configuration endpoint for frontend
 │   └── ping.js         # Health check endpoint
-├── index.html          # Main page
-├── player.html         # Video player page
-├── admin.html          # Admin dashboard
-├── style.css           # Player styles
+├── index.html          # Main application page
+├── app.js              # Main application logic
+├── player.html         # Video player interface
+├── player.js           # Video player logic
+├── admin.html          # Administrative dashboard
+├── admin.js            # Admin dashboard logic
+├── style.css           # Global styles
 ├── .env.example        # Environment variables template
-├── .gitignore          # Git ignore rules
-├── SECURITY.md         # Security guide
-└── README.md           # This file
+└── .gitignore          # Git ignore configuration
 ```
 
-## API Endpoints
+## API Reference
 
-### `/api/catalog`
+### GET `/api/catalog`
+
 Fetches and categorizes Ethiopian/Amharic movies from YouTube.
 
 **Query Parameters:**
-- `queries` - Comma-separated search queries
-- `min` - Minimum video duration in seconds (default: 900)
-- `pages` - Number of search result pages (default: 3, max: 5)
-- `max` - Max videos per category (default: 100)
-- `debug=1` - Enable debug output
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `queries` | string | - | Comma-separated search queries |
+| `min` | integer | 900 | Minimum video duration in seconds |
+| `pages` | integer | 3 | Number of search result pages (max: 5) |
+| `max` | integer | 100 | Maximum videos per category |
+| `debug` | boolean | false | Enable debug output |
 
 **Example:**
 ```
-/api/catalog?queries=Amharic%20movie%202024&min=600&pages=2
+GET /api/catalog?queries=Amharic%20movie%202024&min=600&pages=2
 ```
 
-### `/api/config`
+### GET `/api/config`
+
 Returns Supabase configuration for frontend initialization.
 
 **Response:**
@@ -190,50 +200,44 @@ Returns Supabase configuration for frontend initialization.
 }
 ```
 
-### `/api/ping`
-Health check endpoint.
+### GET `/api/ping`
 
-## Security
+Health check endpoint for monitoring.
 
-This project implements several security measures:
+**Response:**
+```json
+{
+  "status": "ok"
+}
+```
 
-- ✅ Environment variables for sensitive data
-- ✅ Row Level Security (RLS) on all database tables
-- ✅ Supabase Auth for user authentication
-- ✅ Admin role verification for protected routes
-- ✅ CORS configuration
-- ✅ Input validation and sanitization
+## Administration
 
-**Read [SECURITY.md](./SECURITY.md) for detailed security setup and best practices.**
+### Granting Admin Access
 
-## Admin Access
+To grant administrative privileges to a user:
 
-To make a user an admin:
+1. Navigate to Supabase Dashboard → Table Editor → `profiles`
+2. Locate the user's record
+3. Update the `role` field from `user` to `admin`
+4. The user will now have access to `/admin.html`
 
-1. Go to Supabase Dashboard → Table Editor → `profiles`
-2. Find the user's row
-3. Change `role` from `user` to `admin`
-4. User can now access `/admin.html`
+### Admin Features
+
+- User management and analytics
+- View user libraries (likes, watch later, viewing history)
+- Platform statistics dashboard
+- Custom branding configuration
 
 ## License
 
 Copyright © 2024. All Rights Reserved.
 
-This code is made available for **viewing and reference purposes only**. You may not use, modify, distribute, or create derivative works from this code without explicit permission. See the [LICENSE](LICENSE) file for full details.
-
-## Support
-
-For issues and questions:
-- Open an issue on GitHub
-- Check [SECURITY.md](./SECURITY.md) for security-related questions
+This code is made available for viewing and reference purposes only. You may not use, modify, distribute, or create derivative works from this code without explicit permission. See the [LICENSE](LICENSE) file for complete terms.
 
 ## Acknowledgments
 
-- Ethiopian film industry for the amazing content
-- Supabase for the backend infrastructure
-- YouTube for video hosting
+Built for the Ethiopian cinema community using:
+- Supabase for backend infrastructure
+- YouTube Data API for content aggregation
 - Vercel for serverless deployment
-
----
-
-Made with ❤️ for Ethiopian cinema
