@@ -315,9 +315,6 @@
   document.body.appendChild(diag);
   function mark(s,c){ diag.textContent = s; diag.style.background = c||'#0a0'; }
 
-  // Safer global guards (no optional chaining, no numeric separators)
-  var hasSB = !!(window.supabase && window.supabase.auth && typeof window.supabase.auth.getUser === 'function');
-
   // Basic error logging
   window.addEventListener('error', function(e){ console.error('JS error:', e.message, e.error||''); mark('error: '+e.message,'#a00'); });
   window.addEventListener('unhandledrejection', function(e){ console.error('Promise rejection:', e.reason||e); mark('promise err','#a00'); });
@@ -340,15 +337,22 @@
   var authModal = document.getElementById('authModal');
   var langToggleBtn = document.getElementById('langToggle');
 
-  // Safe Supabase helpers
+  // Safe Supabase helpers - check dynamically instead of caching
+  function hasSB(){ return !!(window.supabase && window.supabase.auth && typeof window.supabase.auth.getUser === 'function'); }
   function safeGetUser(){
-    if(!hasSB) return Promise.resolve({ data:{ user:null }, error:null });
+    if(!hasSB()) return Promise.resolve({ data:{ user:null }, error:null });
     return supabase.auth.getUser().catch(function(e){ console.warn('getUser',e); return { data:{ user:null }, error:e }; });
   }
-  function safeSignIn(email,pass){ if(!hasSB) return Promise.reject(new Error('Auth not available')); return supabase.auth.signInWithPassword({ email:email, password:pass }); }
-  function safeSignUp(email,pass){ if(!hasSB) return Promise.reject(new Error('Auth not available')); return supabase.auth.signUp({ email:email, password:pass }); }
-  function safeSignOut(){ if(!hasSB) return Promise.resolve(); return supabase.auth.signOut().catch(function(){}); }
-  if(hasSB && supabase.auth.onAuthStateChange){ supabase.auth.onAuthStateChange(function(){ refreshAuthUI(); }); }
+  function safeSignIn(email,pass){ if(!hasSB()) return Promise.reject(new Error('Auth not available')); return supabase.auth.signInWithPassword({ email:email, password:pass }); }
+  function safeSignUp(email,pass){ if(!hasSB()) return Promise.reject(new Error('Auth not available')); return supabase.auth.signUp({ email:email, password:pass }); }
+  function safeSignOut(){ if(!hasSB()) return Promise.resolve(); return supabase.auth.signOut().catch(function(){}); }
+
+  // Set up auth state listener when Supabase is ready
+  setTimeout(function(){
+    if(hasSB() && supabase.auth.onAuthStateChange){
+      supabase.auth.onAuthStateChange(function(){ refreshAuthUI(); });
+    }
+  }, 1000);
 
   // Attach auth handlers immediately (so Login button always works)
   if(loginBtn){ loginBtn.addEventListener('click', function(){ authModal.classList.add('active'); }); }
