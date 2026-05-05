@@ -17,6 +17,8 @@ gojoMOVIES is a full-stack web application designed to showcase Ethiopian and Am
 - Rating and review system
 - Custom video player with keyboard shortcuts and playback controls
 - Responsive design optimized for all screen sizes
+- **Error logging and monitoring** for debugging and performance tracking
+- **Asset optimization** with lazy loading and automatic image fallbacks
 
 ## Technology Stack
 
@@ -58,7 +60,9 @@ gojoMOVIES/
 ├── js/
 │   ├── app.js          # Main application logic
 │   ├── player.js       # Video player logic
-│   └── admin.js        # Admin dashboard logic
+│   ├── admin.js        # Admin dashboard logic
+│   ├── error-logger.js # Error logging and monitoring
+│   └── asset-optimizer.js # Asset optimization and lazy loading
 ├── pages/
 │   ├── index.html      # Main application page
 │   ├── player.html     # Video player interface
