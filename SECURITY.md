@@ -1,234 +1,236 @@
-# Security Guide for gojoMOVIES
+# Security Documentation
 
-## ⚠️ CRITICAL: Exposed Credentials
+This document outlines the security measures implemented in gojoMOVIES and provides guidelines for maintaining a secure deployment.
 
-Your Supabase credentials were previously hardcoded in HTML files and committed to GitHub. **These credentials are now public and must be rotated immediately.**
+## Security Overview
 
-## 🔄 Step 1: Rotate Supabase Keys (URGENT)
+gojoMOVIES implements multiple layers of security to protect user data and ensure safe operation:
 
-### Why This Is Critical
-- Your Supabase URL and anon key were exposed in Git history
-- Anyone with access to your GitHub repository can access your database
-- Even though the code has been updated, the old keys are still in Git history
+- Environment-based credential management
+- Row Level Security (RLS) on all database tables
+- Supabase Auth for user authentication
+- Role-based access control for administrative functions
+- CORS configuration
+- Input validation and sanitization
 
-### How to Rotate Keys
+## Database Security
 
-1. **Go to Supabase Dashboard**
-   - Visit: https://app.supabase.com/project/fuidgrbtqnjphhyiouxn/settings/api
+### Row Level Security (RLS)
 
-2. **Generate New Anon Key**
-   - Navigate to: Settings → API → Project API keys
-   - Click "Reset" on the `anon` key
-   - Copy the new key immediately
+All database tables have Row Level Security enabled to ensure users can only access their own data.
 
-3. **Update Your Environment Variables**
-   - Create a `.env` file in your project root (already in .gitignore)
-   - Add your new credentials:
-   ```bash
-   SUPABASE_URL=https://fuidgrbtqnjphhyiouxn.supabase.co
-   SUPABASE_ANON_KEY=your-new-anon-key-here
-   YT_API_KEY=your-youtube-api-key
-   ```
+#### Enable RLS on Tables
 
-4. **Update Vercel Environment Variables**
-   - Go to: https://vercel.com/your-project/settings/environment-variables
-   - Add/update:
-     - `SUPABASE_URL`
-     - `SUPABASE_ANON_KEY`
-     - `YT_API_KEY`
-   - Redeploy your application
+```sql
+ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE likes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE watch_later ENABLE ROW LEVEL SECURITY;
+ALTER TABLE views ENABLE ROW LEVEL SECURITY;
+ALTER TABLE configs ENABLE ROW LEVEL SECURITY;
+```
 
-## 🔒 Step 2: Secure Your Supabase Database
+#### RLS Policies
 
-### Enable Row Level Security (RLS)
+**Profiles Table:**
+```sql
+-- Users can read all profiles
+CREATE POLICY "Public profiles are viewable by everyone"
+ON profiles FOR SELECT
+USING (true);
 
-Your database tables MUST have RLS enabled to prevent unauthorized access:
+-- Users can update their own profile
+CREATE POLICY "Users can update own profile"
+ON profiles FOR UPDATE
+USING (auth.uid() = id);
+```
 
-1. **Go to Supabase Dashboard → Authentication → Policies**
+**Likes Table:**
+```sql
+-- Users can view their own likes
+CREATE POLICY "Users can view own likes"
+ON likes FOR SELECT
+USING (auth.uid() = user_id);
 
-2. **Enable RLS on all tables:**
-   ```sql
-   ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
-   ALTER TABLE likes ENABLE ROW LEVEL SECURITY;
-   ALTER TABLE watch_later ENABLE ROW LEVEL SECURITY;
-   ALTER TABLE views ENABLE ROW LEVEL SECURITY;
-   ALTER TABLE configs ENABLE ROW LEVEL SECURITY;
-   ```
+-- Users can insert their own likes
+CREATE POLICY "Users can insert own likes"
+ON likes FOR INSERT
+WITH CHECK (auth.uid() = user_id);
 
-3. **Create Security Policies:**
+-- Users can delete their own likes
+CREATE POLICY "Users can delete own likes"
+ON likes FOR DELETE
+USING (auth.uid() = user_id);
+```
 
-   **For `profiles` table:**
-   ```sql
-   -- Users can read all profiles
-   CREATE POLICY "Public profiles are viewable by everyone"
-   ON profiles FOR SELECT
-   USING (true);
+**Watch Later Table:**
+```sql
+-- Users can view their own watch later list
+CREATE POLICY "Users can view own watch later"
+ON watch_later FOR SELECT
+USING (auth.uid() = user_id);
 
-   -- Users can update their own profile
-   CREATE POLICY "Users can update own profile"
-   ON profiles FOR UPDATE
-   USING (auth.uid() = id);
-   ```
+-- Users can insert to their own watch later
+CREATE POLICY "Users can insert own watch later"
+ON watch_later FOR INSERT
+WITH CHECK (auth.uid() = user_id);
 
-   **For `likes` table:**
-   ```sql
-   -- Users can view their own likes
-   CREATE POLICY "Users can view own likes"
-   ON likes FOR SELECT
-   USING (auth.uid() = user_id);
+-- Users can delete from their own watch later
+CREATE POLICY "Users can delete own watch later"
+ON watch_later FOR DELETE
+USING (auth.uid() = user_id);
+```
 
-   -- Users can insert their own likes
-   CREATE POLICY "Users can insert own likes"
-   ON likes FOR INSERT
-   WITH CHECK (auth.uid() = user_id);
+**Views Table:**
+```sql
+-- Users can view their own viewing history
+CREATE POLICY "Users can view own views"
+ON views FOR SELECT
+USING (auth.uid() = user_id);
 
-   -- Users can delete their own likes
-   CREATE POLICY "Users can delete own likes"
-   ON likes FOR DELETE
-   USING (auth.uid() = user_id);
-   ```
+-- Users can insert their own views
+CREATE POLICY "Users can upsert own views"
+ON views FOR INSERT
+WITH CHECK (auth.uid() = user_id);
 
-   **For `watch_later` table:**
-   ```sql
-   -- Users can view their own watch later list
-   CREATE POLICY "Users can view own watch later"
-   ON watch_later FOR SELECT
-   USING (auth.uid() = user_id);
+-- Users can update their own views
+CREATE POLICY "Users can update own views"
+ON views FOR UPDATE
+USING (auth.uid() = user_id);
+```
 
-   -- Users can insert to their own watch later
-   CREATE POLICY "Users can insert own watch later"
-   ON watch_later FOR INSERT
-   WITH CHECK (auth.uid() = user_id);
+**Configs Table (Admin Only):**
+```sql
+-- Everyone can read configs
+CREATE POLICY "Configs are viewable by everyone"
+ON configs FOR SELECT
+USING (true);
 
-   -- Users can delete from their own watch later
-   CREATE POLICY "Users can delete own watch later"
-   ON watch_later FOR DELETE
-   USING (auth.uid() = user_id);
-   ```
+-- Only admins can modify configs
+CREATE POLICY "Only admins can modify configs"
+ON configs FOR ALL
+USING (
+  EXISTS (
+    SELECT 1 FROM profiles
+    WHERE profiles.id = auth.uid()
+    AND profiles.role = 'admin'
+  )
+);
+```
 
-   **For `views` table:**
-   ```sql
-   -- Users can view their own viewing history
-   CREATE POLICY "Users can view own views"
-   ON views FOR SELECT
-   USING (auth.uid() = user_id);
+## Environment Variables
 
-   -- Users can insert their own views
-   CREATE POLICY "Users can upsert own views"
-   ON views FOR INSERT
-   WITH CHECK (auth.uid() = user_id);
+Sensitive credentials are stored as environment variables and never committed to the repository.
 
-   -- Users can update their own views
-   CREATE POLICY "Users can update own views"
-   ON views FOR UPDATE
-   USING (auth.uid() = user_id);
-   ```
+### Required Variables
 
-   **For `configs` table (admin only):**
-   ```sql
-   -- Everyone can read configs
-   CREATE POLICY "Configs are viewable by everyone"
-   ON configs FOR SELECT
-   USING (true);
-
-   -- Only admins can modify configs
-   CREATE POLICY "Only admins can modify configs"
-   ON configs FOR ALL
-   USING (
-     EXISTS (
-       SELECT 1 FROM profiles
-       WHERE profiles.id = auth.uid()
-       AND profiles.role = 'admin'
-     )
-   );
-   ```
-
-## 🚀 Step 3: Deploy Securely
+```env
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_ANON_KEY=your-supabase-anon-key
+YT_API_KEY=your-api-key
+```
 
 ### Local Development
 
-1. **Create `.env` file** (never commit this):
-   ```bash
-   cp .env.example .env
-   # Edit .env with your actual credentials
-   ```
+Create a `.env` file in the project root (already in `.gitignore`):
 
-2. **Install Vercel CLI** (if testing locally):
-   ```bash
-   npm i -g vercel
-   vercel dev
-   ```
+```bash
+cp .env.example .env
+# Edit .env with your credentials
+```
 
 ### Production Deployment
 
-1. **Set environment variables in Vercel:**
-   - Go to Project Settings → Environment Variables
-   - Add all variables from `.env.example`
-   - Deploy: `vercel --prod`
+Configure environment variables in Vercel:
+1. Navigate to Project Settings → Environment Variables
+2. Add all required variables
+3. Redeploy the application
 
-2. **Verify the deployment:**
-   - Test that `/api/config` returns your credentials
-   - Test authentication flow
-   - Verify RLS policies are working
+## Authentication
 
-## 🛡️ Security Best Practices
+### User Authentication
 
-### What's Safe to Expose
-- ✅ Supabase URL (public)
-- ✅ Supabase Anon Key (public, but ONLY with RLS enabled)
+- Supabase Auth handles user registration and login
+- Email/password authentication is enabled
+- Session management is handled automatically
 
-### What Must Stay Secret
-- ❌ Supabase Service Role Key (never expose client-side)
-- ❌ YouTube API Key (keep in environment variables)
-- ❌ Any private keys or secrets
+### Admin Access Control
 
-### Additional Recommendations
+Administrative functions are protected by role-based access control:
+
+1. Admin role is stored in the `profiles` table
+2. Admin routes verify user role before granting access
+3. Database policies enforce admin-only operations
+
+## Best Practices
+
+### Credential Management
+
+- ✅ Store all credentials in environment variables
+- ✅ Never commit `.env` files to version control
+- ✅ Rotate credentials periodically
+- ✅ Use different credentials for development and production
+
+### Public vs Private Keys
+
+**Safe to Expose:**
+- Supabase URL (public)
+- Supabase Anon Key (public, protected by RLS)
+
+**Must Stay Secret:**
+- Supabase Service Role Key (never expose client-side)
+- API keys (keep in environment variables)
+- Private keys and secrets
+
+### Additional Security Measures
 
 1. **Enable Email Confirmation**
    - Supabase Dashboard → Authentication → Settings
    - Enable "Confirm email" to prevent spam accounts
 
-2. **Set Up Rate Limiting**
-   - Consider adding rate limiting to your API endpoints
-   - Use Vercel's Edge Config or Upstash Redis
+2. **Rate Limiting**
+   - Consider implementing rate limiting on API endpoints
+   - Use Vercel's Edge Config or external services
 
-3. **Monitor Your Database**
-   - Regularly check Supabase logs for suspicious activity
-   - Set up alerts for unusual patterns
+3. **Database Monitoring**
+   - Regularly review Supabase logs
+   - Set up alerts for unusual activity patterns
 
-4. **Regular Security Audits**
-   - Review RLS policies quarterly
-   - Check for exposed credentials in code
+4. **Regular Audits**
+   - Review RLS policies periodically
    - Update dependencies regularly
+   - Audit user roles and permissions
 
-## 📋 Checklist
+5. **HTTPS Enforcement**
+   - Vercel enforces HTTPS by default
+   - Ensure all external API calls use HTTPS
 
-Before going live, ensure:
+## Security Checklist
 
-- [ ] Supabase anon key has been rotated
-- [ ] All environment variables are set in Vercel
-- [ ] RLS is enabled on all tables
-- [ ] RLS policies are tested and working
-- [ ] `.env` file is in `.gitignore`
-- [ ] No credentials in Git history (or history is cleaned)
-- [ ] Email confirmation is enabled
-- [ ] Admin access is properly restricted
-- [ ] API endpoints have rate limiting
-- [ ] HTTPS is enforced (Vercel does this by default)
+Before deploying to production:
 
-## 🆘 If Your Database Was Compromised
+- [ ] All environment variables configured in Vercel
+- [ ] RLS enabled on all database tables
+- [ ] RLS policies tested and verified
+- [ ] `.env` file in `.gitignore`
+- [ ] No credentials in source code
+- [ ] Email confirmation enabled (optional)
+- [ ] Admin access properly restricted
+- [ ] HTTPS enforced
+- [ ] Dependencies up to date
 
-If you suspect unauthorized access:
+## Incident Response
 
-1. **Immediately rotate all keys** in Supabase dashboard
-2. **Check database logs** for suspicious queries
-3. **Review all user accounts** for unauthorized admins
-4. **Audit all data** for unauthorized modifications
-5. **Consider resetting user passwords** if needed
-6. **Enable 2FA** on your Supabase account
+If you suspect a security breach:
 
-## 📚 Additional Resources
+1. Immediately rotate all credentials in Supabase dashboard
+2. Review database logs for suspicious activity
+3. Audit user accounts for unauthorized access
+4. Check for unauthorized data modifications
+5. Enable 2FA on all administrative accounts
+6. Document the incident and response actions
 
-- [Supabase Row Level Security](https://supabase.com/docs/guides/auth/row-level-security)
+## Resources
+
+- [Supabase Row Level Security Documentation](https://supabase.com/docs/guides/auth/row-level-security)
 - [Vercel Environment Variables](https://vercel.com/docs/concepts/projects/environment-variables)
-- [OWASP Top 10](https://owasp.org/www-project-top-ten/)
+- [OWASP Top 10 Security Risks](https://owasp.org/www-project-top-ten/)
