@@ -290,10 +290,6 @@
       card.innerHTML =
         '<div class="thumbnail">'+
           '<img src="https://img.youtube.com/vi/'+v.videoId+'/mqdefault.jpg" alt="'+cleanTitle.replace(/"/g,'&quot;')+'" loading="lazy"/>'+
-          '<div class="overlay-actions">'+
-            '<button class="btn-like'+(isLiked?' active':'')+'" title="Like" aria-label="Like">❤</button>'+
-            '<button class="btn-save'+(isSaved?' active':'')+'" title="Watch later" aria-label="Watch later">⏱</button>'+
-          '</div>'+
           '<div class="play-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg></div>'+
         '</div>'+
         '<div class="info">'+
@@ -306,8 +302,6 @@
       (function(video, title){
         var rate = card.querySelector('.rating');
         if(rate){ rate.addEventListener('click', function(e){ e.stopPropagation(); openRatingModal(video.videoId, title); }); }
-        var bl = card.querySelector('.btn-like'); if(bl){ bl.addEventListener('click', function(e){ handleLikeToggle(e, video.videoId, title); }); }
-        var bs = card.querySelector('.btn-save'); if(bs){ bs.addEventListener('click', function(e){ handleWatchLaterToggle(e, video.videoId, title); }); }
         card.addEventListener('click', function(){ location.href = 'player.html?v='+encodeURIComponent(video.videoId)+'&t='+encodeURIComponent(title)+'&lang='+encodeURIComponent(currentLang); });
       })(v, cleanTitle);
       grid.appendChild(card);
@@ -574,7 +568,7 @@
 
   // Boot sequence
   mark('loading catalog...');
-  fetchCatalog(false).then(function(){ wirePagination(); mark('OK movies'); }).catch(function(){ setFromCatalog(FALLBACK_CATALOG); wirePagination(); mark('OK fallback'); });
+  fetchCatalog(false).then(function(){ wirePagination(); mark('ready'); }).catch(function(){ setFromCatalog(FALLBACK_CATALOG); wirePagination(); mark('ready'); });
 
   // Auth refresh last (UI already usable)
   refreshAuthUI();

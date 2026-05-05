@@ -177,6 +177,32 @@
   opacity: 1;
 }
 
+/* Preview Thumbnail */
+#previewThumbnail {
+  position: absolute;
+  bottom: 120%;
+  left: 0;
+  transform: translateX(-50%);
+  background: rgba(10, 10, 10, 0.95);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  padding: 4px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  z-index: 100;
+  display: none;
+}
+
+#previewImage {
+  width: 160px;
+  height: 90px;
+  object-fit: cover;
+  border-radius: 4px;
+  display: block;
+}
+
 #time-display {
   color: #e0e0e0;
   font-family: 'Inter', -apple-system, system-ui, sans-serif;
