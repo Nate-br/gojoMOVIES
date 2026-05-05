@@ -1,0 +1,599 @@
+    (function () {
+      // Query params
+      function getQueryParams() {
+        const params = {};
+        location.search.substring(1).split("&").forEach(pair => {
+          if (!pair) return;
+          const [k, v] = pair.split("=");
+          params[decodeURIComponent(k)] = decodeURIComponent(v || "");
+        });
+        return params;
+      }
+      const params = getQueryParams();
+      const videoId = params.v || "";
+      const title = params.t || "Gojo Films Video";
+      const startTime = parseFloat(params.time || params.s || "0") || 0;
+      let currentLang = (params.lang || localStorage.getItem('gojo_lang') || 'EN').toUpperCase();
+
+      // Elements
+      const info = document.getElementById("info");
+      const playPauseBtn = document.getElementById("playPauseBtn");
+      const pauseCover = document.getElementById("pauseCover");
+      const suggestedMoviesGrid = document.getElementById("suggestedMoviesGrid");
+      const interactionShield = document.getElementById("interactionShield");
+      const muteBtn = document.getElementById("muteBtn");
+      const volumeSlider = document.getElementById("volumeSlider");
+      const maximizeBtn = document.getElementById("maximizeBtn");
+      const progressContainer = document.getElementById("progress-container");
+      const progressBar = document.getElementById("progress");
+      const timeDisplay = document.getElementById("time-display");
+      const speedBtn = document.getElementById('speedBtn');
+      const speedMenu = document.getElementById('speedMenu');
+      const pipBtn = document.getElementById('pipBtn');
+      const copyLinkBtn = document.getElementById('copyLinkBtn');
+      const backBtn = document.getElementById('backBtn');
+      const previewThumbnail = document.getElementById('previewThumbnail');
+      const previewImage = document.getElementById('previewImage');
+      const seeMoreBtn = document.getElementById('seeMoreBtn');
+
+      // Insert Like & Save buttons
+      const controls = document.getElementById('controls');
+      const likeBtn = document.createElement('button');
+      likeBtn.className = 'icon-button';
+      likeBtn.title = 'Like';
+      likeBtn.setAttribute('aria-label','Like');
+      likeBtn.innerHTML = `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path fill="currentColor" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>`;
+      
+      const saveBtn = document.createElement('button');
+      saveBtn.className = 'icon-button';
+      saveBtn.title = 'Watch later';
+      saveBtn.setAttribute('aria-label','Watch later');
+      saveBtn.innerHTML = `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path fill="currentColor" d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm4.2 14.2L11 13V7h1.5v5.2l4.5 2.7-.8 1.3z"/></svg>`;
+      
+      controls.insertBefore(saveBtn, controls.firstChild);
+      controls.insertBefore(likeBtn, controls.firstChild);
+
+      info.textContent = title;
+
+      // Player state
+      let player, duration = 0, ready = false, isMuted = false;
+      let progressInterval = null, lastSavedTime = 0;
+
+      function updatePlayPauseBtn(isPlaying) {
+        playPauseBtn.innerHTML = isPlaying
+          ? `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><rect x="6" y="5" width="4" height="14" fill="currentColor"/><rect x="14" y="5" width="4" height="14" fill="currentColor"/></svg>`
+          : `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path fill="currentColor" d="M8 5v14l11-7z"/></svg>`;
+      }
+      function showPause() { pauseCover.classList.remove('hidden'); }
+      function hidePause() { pauseCover.classList.add('hidden'); }
+      function updateVolumeSliderBackground(value) {
+        const percentage = value;
+        volumeSlider.style.background = `linear-gradient(to right, var(--accent-primary) 0%, var(--accent-primary) ${percentage}%, #444 ${percentage}%, #444 100%)`;
+      }
+      function ensurePlay() {
+        if (!player) return;
+        try { player.playVideo(); } catch {}
+        setTimeout(() => {
+          if (player.getPlayerState && player.getPlayerState() !== YT.PlayerState.PLAYING) {
+            try { player.mute(); isMuted = true; muteBtn.classList.add('active'); player.playVideo(); } catch {}
+          }
+        }, 300);
+        hidePause(); updatePlayPauseBtn(true);
+      }
+
+      // Load YouTube API
+      window.onYouTubeIframeAPIReady = function () {
+        player = new YT.Player("player", {
+          videoId,
+          playerVars: { modestbranding: 1, rel: 0, iv_load_policy: 3, controls: 0, disablekb: 1, fs: 1, autoplay: 0, playsinline: 1, origin: location.origin },
+          events: { onReady: onPlayerReady, onStateChange: onStateChange, onError: onPlayerError }
+        });
+      };
+      const tag = document.createElement("script");
+      tag.src = "https://www.youtube.com/iframe_api";
+      document.head.appendChild(tag);
+
+      function onPlayerReady() {
+        ready = true;
+        try {
+          const iframe = player.getIframe();
+          iframe.setAttribute('allow', 'autoplay; encrypted-media; picture-in-picture; fullscreen');
+          iframe.setAttribute('allowfullscreen', 'true');
+        } catch {}
+        duration = player.getDuration();
+        if (startTime > 0 && (!duration || startTime < duration)) player.seekTo(startTime, true);
+        showPause();
+        updatePlayPauseBtn(false);
+
+        const savedVol = parseInt(localStorage.getItem('gojo_volume') || '100', 10);
+        const savedMuted = localStorage.getItem('gojo_muted') === 'true';
+        player.setVolume(isNaN(savedVol) ? 100 : savedVol);
+        volumeSlider.value = isNaN(savedVol) ? 100 : savedVol;
+        isMuted = savedMuted || savedVol === 0;
+        if (isMuted) player.mute(); else player.unMute();
+        if (isMuted) muteBtn.classList.add('active'); else muteBtn.classList.remove('active');
+        updateVolumeSliderBackground(volumeSlider.value);
+
+        // Resume prompt
+        const resumeBox = document.getElementById("resumeBox");
+        const resumeTimeEl = document.getElementById("resumeTime");
+        const resumeYes = document.getElementById("resumeYes");
+        const resumeNo = document.getElementById("resumeNo");
+        let resumeAt = parseFloat(localStorage.getItem(`gojo_lastpos_${videoId}`) || '0');
+        if (startTime > 0) resumeAt = startTime;
+        if (resumeAt > 10 && (!duration || resumeAt < duration - 5)) {
+          resumeTimeEl.textContent = formatTime(resumeAt);
+          resumeBox.classList.remove('hidden');
+          resumeYes.onclick = () => { player.seekTo(resumeAt, true); ensurePlay(); resumeBox.classList.add('hidden'); };
+          resumeNo.onclick = () => { player.seekTo(0, true); ensurePlay(); resumeBox.classList.add('hidden'); };
+        } else { resumeBox.classList.add('hidden'); }
+
+        // Prefill Like/Save states
+        (async () => {
+          const { data: { user } } = await supabase.auth.getUser();
+          if (!user) return;
+          const [l, w] = await Promise.all([
+            supabase.from('likes').select('video_id').eq('user_id', user.id).eq('video_id', videoId).maybeSingle(),
+            supabase.from('watch_later').select('video_id').eq('user_id', user.id).eq('video_id', videoId).maybeSingle()
+          ]);
+          const liked = !!l.data, saved = !!w.data;
+          likeBtn.classList.toggle('active', liked);
+          saveBtn.classList.toggle('active', saved);
+        })();
+      }
+
+      function onStateChange(e) {
+        if (e.data === YT.PlayerState.PLAYING) {
+          hidePause(); updatePlayPauseBtn(true);
+          if (interactionShield) interactionShield.style.pointerEvents = 'auto';
+          startProgressUpdater();
+          maybeTrackStart();
+        } else if (e.data === YT.PlayerState.PAUSED) {
+          showPause(); updatePlayPauseBtn(false);
+          if (interactionShield) interactionShield.style.pointerEvents = 'none';
+          stopProgressUpdater();
+          upsertView(false);
+        } else if (e.data === YT.PlayerState.ENDED) {
+          showPause(); updatePlayPauseBtn(false);
+          if (interactionShield) interactionShield.style.pointerEvents = 'none';
+          stopProgressUpdater();
+          updateProgressBar(100);
+          if (duration) updateTimeDisplay(duration);
+          upsertView(true);
+        }
+      }
+      function onPlayerError(err) {
+        console.warn('YouTube player error', err);
+        showPause(); updatePlayPauseBtn(false);
+      }
+
+      // Interaction shield
+      if (interactionShield) {
+        interactionShield.style.pointerEvents = 'none';
+        interactionShield.addEventListener('click', (e) => {
+          e.preventDefault(); e.stopPropagation();
+          if (!ready || !player) return;
+          const s = player.getPlayerState ? player.getPlayerState() : null;
+          if (s === YT.PlayerState.PLAYING) player.pauseVideo(); else ensurePlay();
+        });
+        interactionShield.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); }, { passive: false });
+        interactionShield.addEventListener('contextmenu', (e) => e.preventDefault());
+      }
+
+      // Controls
+      pauseCover.addEventListener("click", () => { if (ready) ensurePlay(); });
+      playPauseBtn.addEventListener("click", () => {
+        if (!player || !ready) return;
+        const s = player.getPlayerState();
+        if (s === YT.PlayerState.PLAYING) player.pauseVideo(); else ensurePlay();
+      });
+
+      muteBtn.addEventListener("click", () => {
+        if (!player) return;
+        if (isMuted) { player.unMute(); isMuted = false; muteBtn.classList.remove('active'); if (volumeSlider.value === "0") { volumeSlider.value = "30"; player.setVolume(30); } }
+        else { player.mute(); isMuted = true; muteBtn.classList.add('active'); }
+        localStorage.setItem('gojo_muted', isMuted ? 'true' : 'false');
+        updateVolumeSliderBackground(volumeSlider.value);
+      });
+
+      volumeSlider.addEventListener("input", (e) => {
+        if (!player) return;
+        const vol = parseInt(e.target.value, 10);
+        player.setVolume(vol);
+        isMuted = vol === 0;
+        if (isMuted) player.mute(); else player.unMute();
+        localStorage.setItem('gojo_volume', String(vol));
+        localStorage.setItem('gojo_muted', isMuted ? 'true' : 'false');
+        if (isMuted) muteBtn.classList.add('active'); else muteBtn.classList.remove('active');
+        updateVolumeSliderBackground(vol);
+      });
+
+      maximizeBtn.addEventListener("click", () => {
+        const el = document.getElementById("playerContainer");
+        if (!document.fullscreenElement) (el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen || el.msRequestFullscreen)?.call(el);
+        else (document.exitFullscreen || document.webkitExitFullscreen || document.mozCancelFullScreen || document.msExitFullscreen)?.call(document);
+      });
+
+      function updateProgressBar(percent) {
+        percent = Math.min(Math.max(percent, 0), 100);
+        progressBar.style.width = percent + "%";
+        progressContainer.setAttribute("aria-valuenow", percent.toFixed(0));
+      }
+      function formatTime(s) {
+        s = Math.floor(s || 0);
+        const h = Math.floor(s / 3600);
+        const m = Math.floor((s % 3600) / 60);
+        const sec = s % 60;
+        if (h > 0) return h + ":" + (m < 10 ? "0" + m : m) + ":" + (sec < 10 ? "0" + sec : sec);
+        return m + ":" + (sec < 10 ? "0" + sec : sec);
+      }
+      function updateTimeDisplay(current) {
+        current = Math.min(Math.max(current, 0), duration || 0);
+        timeDisplay.textContent = formatTime(current) + " / " + formatTime(duration || 0);
+      }
+      function startProgressUpdater() {
+        stopProgressUpdater();
+        progressInterval = setInterval(() => {
+          if (player && player.getPlayerState() === YT.PlayerState.PLAYING) {
+            const current = player.getCurrentTime();
+            updateProgressBar(duration ? (current / duration) * 100 : 0);
+            updateTimeDisplay(current);
+            const t = Math.floor(current);
+            const prev = lastSavedTime;
+            if (t !== prev) {
+              lastSavedTime = t;
+              localStorage.setItem(`gojo_lastpos_${videoId}`, String(t));
+            }
+          }
+        }, 500);
+      }
+      function stopProgressUpdater() { if (progressInterval) { clearInterval(progressInterval); progressInterval = null; } }
+
+      progressContainer.addEventListener("mouseup", (e) => {
+        if (!player || !duration) return;
+        const rect = progressContainer.getBoundingClientRect();
+        const ratio = Math.min(Math.max((e.clientX - rect.left) / rect.width, 0), 1);
+        const t = ratio * duration;
+        player.seekTo(t, true);
+        updateProgressBar(ratio * 100); updateTimeDisplay(t); hidePause();
+      });
+
+      // Touch seek support
+      progressContainer.addEventListener("touchend", (e) => {
+        if (!player || !duration) return;
+        const touch = e.changedTouches[0];
+        const rect = progressContainer.getBoundingClientRect();
+        const ratio = Math.min(Math.max((touch.clientX - rect.left) / rect.width, 0), 1);
+        const t = ratio * duration;
+        player.seekTo(t, true);
+        updateProgressBar(ratio * 100); updateTimeDisplay(t); hidePause();
+      });
+
+      // Scrub preview
+      const preloadedThumbs = [];
+      function preloadThumbnails() {
+        for (let i = 0; i <= 3; i++) {
+          const img = new Image();
+          img.src = `https://img.youtube.com/vi/${videoId}/${i}.jpg`;
+          preloadedThumbs[i] = img;
+        }
+      }
+      preloadThumbnails();
+
+      progressContainer.addEventListener("mousemove", (e) => {
+        const rect = progressContainer.getBoundingClientRect();
+        let x = e.clientX - rect.left; x = Math.min(Math.max(x, 0), rect.width);
+        const time = duration ? (x / rect.width) * duration : 0;
+        let previewX = x - previewThumbnail.offsetWidth / 2;
+        previewX = Math.min(Math.max(previewX, 0), rect.width - previewThumbnail.offsetWidth);
+        previewThumbnail.style.left = previewX + "px";
+        previewThumbnail.style.display = duration ? "block" : "none";
+        const percentage = duration ? (time / duration) : 0;
+        let idx = percentage > 0.75 ? 3 : percentage > 0.5 ? 2 : percentage > 0.25 ? 1 : 0;
+        const url = preloadedThumbs[idx]?.src || `https://img.youtube.com/vi/${videoId}/${idx}.jpg`;
+        if (previewImage.src !== url) { previewImage.style.opacity = '0'; previewImage.src = url; setTimeout(() => { previewImage.style.opacity = '1'; }, 50); }
+      });
+      progressContainer.addEventListener("mouseleave", () => { previewThumbnail.style.display = "none"; });
+
+      // Speed
+      function updateSpeedUI(rate) {
+        speedBtn.textContent = rate + "x";
+        Array.from(speedMenu.querySelectorAll('button')).forEach(b => {
+          const r = parseFloat(b.dataset.speed);
+          b.classList.toggle('active', r === rate);
+        });
+        localStorage.setItem('gojo_speed', String(rate));
+      }
+      speedBtn.addEventListener('click', () => { speedMenu.classList.toggle('hidden'); });
+      document.addEventListener('click', (e) => { if (!speedMenu.contains(e.target) && e.target !== speedBtn) speedMenu.classList.add('hidden'); });
+      speedMenu.querySelectorAll('button').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const rate = parseFloat(btn.dataset.speed);
+          if (player?.setPlaybackRate) player.setPlaybackRate(rate);
+          updateSpeedUI(rate);
+          speedMenu.classList.add('hidden');
+        });
+      });
+
+      // Load saved speed
+      const savedSpeed = parseFloat(localStorage.getItem('gojo_speed') || '1');
+      if (savedSpeed && savedSpeed !== 1) {
+        updateSpeedUI(savedSpeed);
+        setTimeout(() => { if (player?.setPlaybackRate) player.setPlaybackRate(savedSpeed); }, 1000);
+      }
+
+      pipBtn.addEventListener('click', () => {
+        const original = pipBtn.title;
+        pipBtn.title = "Right-click twice on the video and choose Picture-in-Picture";
+        setTimeout(() => { pipBtn.title = original; }, 6000);
+      });
+
+      copyLinkBtn.addEventListener("click", async () => {
+        const url = new URL(window.location.href);
+        const current = Math.floor(player?.getCurrentTime?.() || 0);
+        url.searchParams.set('v', videoId);
+        url.searchParams.set('t', title);
+        url.searchParams.set('time', current);
+        url.searchParams.set('lang', currentLang);
+        try {
+          if (navigator.clipboard && window.isSecureContext) await navigator.clipboard.writeText(url.toString());
+          else {
+            const temp = document.createElement('textarea'); temp.value = url.toString();
+            document.body.appendChild(temp); temp.select(); document.execCommand('copy'); temp.remove();
+          }
+          copyLinkBtn.title = "Copied!"; setTimeout(() => { copyLinkBtn.title = "Copy link"; }, 1200);
+        } catch { alert("Failed to copy link."); }
+      });
+
+      backBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        try {
+          if (document.referrer && new URL(document.referrer).origin === location.origin) { history.back(); return; }
+        } catch {}
+        location.href = "index.html";
+      });
+
+      seeMoreBtn.addEventListener("click", () => {
+        window.location.href = "index.html";
+      });
+
+      // Keyboard shortcuts
+      document.addEventListener('keydown', (e) => {
+        const tag = document.activeElement?.tagName;
+        if (['INPUT','TEXTAREA','SELECT','BUTTON','A'].includes(tag)) return;
+        if (e.ctrlKey || e.metaKey || e.altKey) return;
+
+        const key = e.key;
+        if (key === ' ' || key.toLowerCase() === 'k') { e.preventDefault(); const s = player?.getPlayerState(); if (s === YT.PlayerState.PLAYING) player.pauseVideo(); else ensurePlay(); }
+        else if (key.toLowerCase() === 'm') { e.preventDefault(); muteBtn.click(); }
+        else if (key.toLowerCase() === 'f') { e.preventDefault(); maximizeBtn.click(); }
+        else if (key.toLowerCase() === 'j') { e.preventDefault(); seekRelative(-10); }
+        else if (key.toLowerCase() === 'l') { e.preventDefault(); seekRelative(10); }
+        else if (key === 'ArrowLeft') { e.preventDefault(); seekRelative(-5); }
+        else if (key === 'ArrowRight') { e.preventDefault(); seekRelative(5); }
+        else if (key === 'ArrowUp') { e.preventDefault(); adjustVolume(10); }
+        else if (key === 'ArrowDown') { e.preventDefault(); adjustVolume(-10); }
+        else if (/^[0-9]$/.test(key)) { e.preventDefault(); jumpToPercent(parseInt(key,10) * 10); }
+      });
+      function seekRelative(delta) {
+        if (!player || !duration) return;
+        const current = player.getCurrentTime();
+        let next = Math.min(Math.max(current + delta, 0), duration);
+        player.seekTo(next, true);
+        updateProgressBar((next / duration) * 100); updateTimeDisplay(next); hidePause();
+      }
+      function jumpToPercent(percent) {
+        if (!player || !duration) return;
+        const t = (percent / 100) * duration;
+        player.seekTo(t, true);
+        updateProgressBar(percent); updateTimeDisplay(t); hidePause();
+      }
+      function adjustVolume(delta) {
+        if (!player) return;
+        let vol = parseInt(volumeSlider.value, 10) + delta;
+        vol = Math.min(Math.max(vol, 0), 100);
+        volumeSlider.value = vol;
+        player.setVolume(vol);
+        isMuted = vol === 0;
+        if (isMuted) { player.mute(); muteBtn.classList.add('active'); }
+        else { player.unMute(); muteBtn.classList.remove('active'); }
+        localStorage.setItem('gojo_volume', String(vol));
+        localStorage.setItem('gojo_muted', isMuted ? 'true' : 'false');
+        updateVolumeSliderBackground(vol);
+      }
+
+      // Like/Save handlers
+      async function ensureAuthed() {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) { alert('Login required'); return null; }
+        return user;
+      }
+      likeBtn.addEventListener('click', async () => {
+        const user = await ensureAuthed(); if (!user) return;
+        const { data } = await supabase.from('likes').select('video_id').eq('user_id', user.id).eq('video_id', videoId).maybeSingle();
+        if (data) {
+          await supabase.from('likes').delete().match({ user_id: user.id, video_id: videoId });
+          likeBtn.classList.remove('active');
+        } else {
+          await supabase.from('likes').upsert({ user_id: user.id, video_id: videoId, title });
+          likeBtn.classList.add('active');
+        }
+      });
+      saveBtn.addEventListener('click', async () => {
+        const user = await ensureAuthed(); if (!user) return;
+        const { data } = await supabase.from('watch_later').select('video_id').eq('user_id', user.id).eq('video_id', videoId).maybeSingle();
+        if (data) {
+          await supabase.from('watch_later').delete().match({ user_id: user.id, video_id: videoId });
+          saveBtn.classList.remove('active');
+        } else {
+          await supabase.from('watch_later').upsert({ user_id: user.id, video_id: videoId, title });
+          saveBtn.classList.add('active');
+        }
+      });
+
+      // ========== SUGGESTED MOVIES ==========
+      function getCachedCatalog() {
+        for (const key of ['gojo_catalog_v4','gojo_catalog_v3','gojo_catalog_v2']) {
+          try {
+            const raw = localStorage.getItem(key);
+            const cat = raw ? JSON.parse(raw) : null;
+            if (cat?.items?.length) return cat;
+          } catch {}
+        }
+        return null;
+      }
+
+      const FALLBACK_SUGGESTIONS = [
+        { title: "ጥላዬ (Telaye) - Full Amharic Movie 2022", videoId: "SxVyFHDyrRI" },
+        { title: "ወዳጅ (Wedaj) - Full Ethiopian Movie 2023", videoId: "phmIAGUlKVg" },
+        { title: "ወይኔ የአራዳ ልጅ 5 - Full Movie 2020", videoId: "u4n1bBSWPHY" },
+        { title: "ባለ ክራር (Bale Kirar) - Ethiopian Full Movie 2024", videoId: "WIJU3F5Vrmc" },
+        { title: "የእናቴ ፀሎት - Full Amharic Movie", videoId: "example1" },
+        { title: "ፍቅር እስከ መቃብር - Ethiopian Movie", videoId: "example2" }
+      ];
+
+      function loadSuggestedMovies() {
+        suggestedMoviesGrid.innerHTML = "";
+
+        // Show loading skeletons
+        for (let i = 0; i < 8; i++) {
+          const skeleton = document.createElement("div");
+          skeleton.className = "suggested-card loading";
+          skeleton.setAttribute("role", "listitem");
+          skeleton.innerHTML = `
+            <div class="suggested-card__thumbnail"></div>
+            <div class="suggested-card__info">
+              <h3 class="suggested-card__title">Loading...</h3>
+              <div class="suggested-card__meta"><span>--</span></div>
+            </div>
+          `;
+          suggestedMoviesGrid.appendChild(skeleton);
+        }
+
+        // Load actual content
+        setTimeout(() => {
+          let all = getCachedCatalog()?.items?.map(v => ({
+            title: v.title,
+            videoId: v.videoId,
+            year: v.year || null,
+            duration: v.duration || null
+          })) || FALLBACK_SUGGESTIONS;
+
+          // Filter out current video and shuffle
+          all = all
+            .filter(v => v.videoId !== videoId && v.videoId !== 'example1' && v.videoId !== 'example2')
+            .sort(() => Math.random() - 0.5)
+            .slice(0, 8);
+
+          // If not enough, use fallbacks
+          if (all.length < 4) {
+            all = FALLBACK_SUGGESTIONS
+              .filter(v => v.videoId !== videoId && !v.videoId.startsWith('example'))
+              .slice(0, 8);
+          }
+
+          suggestedMoviesGrid.innerHTML = "";
+
+          all.forEach((video, index) => {
+            const card = document.createElement("div");
+            card.className = "suggested-card";
+            card.setAttribute("role", "listitem");
+            card.setAttribute("tabindex", "0");
+            card.setAttribute("aria-label", `Play ${video.title}`);
+
+            // Extract year from title if not provided
+            const yearMatch = video.title.match(/\b(20\d{2})\b/);
+            const displayYear = video.year || (yearMatch ? yearMatch[1] : null);
+
+            // Random duration for demo (you can remove this if you have real data)
+            const durationMinutes = video.duration || (Math.floor(Math.random() * 60) + 90);
+            const durationFormatted = Math.floor(durationMinutes / 60) + ":" + String(durationMinutes % 60).padStart(2, '0') + ":00";
+
+            card.innerHTML = `
+              <div class="suggested-card__thumbnail">
+                <img
+                  src="https://img.youtube.com/vi/${video.videoId}/mqdefault.jpg"
+                  alt="${video.title.replace(/"/g, '&quot;')}"
+                  loading="lazy"
+                  onerror="this.onerror=null; this.src='https://img.youtube.com/vi/${video.videoId}/hqdefault.jpg';"
+                />
+                <div class="suggested-card__overlay"></div>
+                <div class="suggested-card__play" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M8 5v14l11-7z"/>
+                  </svg>
+                </div>
+                <span class="suggested-card__badge">HD</span>
+              </div>
+              <div class="suggested-card__info">
+                <h3 class="suggested-card__title" title="${video.title.replace(/"/g, '&quot;')}">
+                  ${video.title.replace(/</g, '&lt;').replace(/>/g, '&gt;')}
+                </h3>
+                <div class="suggested-card__meta">
+                  ${displayYear ? `
+                    <span>
+                      <svg viewBox="0 0 24 24"><path fill="currentColor" d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11z"/></svg>
+                      ${displayYear}
+                    </span>
+                  ` : ''}
+                  <span>
+                    <svg viewBox="0 0 24 24"><path fill="currentColor" d="M18 4l2 4h-3l-2-4h-2l2 4h-3l-2-4H8l2 4H7L5 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V4h-4z"/></svg>
+                    ፊልም
+                  </span>
+                </div>
+              </div>
+            `;
+
+            // Click handler
+            card.addEventListener("click", () => {
+              const url = `player.html?v=${encodeURIComponent(video.videoId)}&t=${encodeURIComponent(video.title)}&lang=${encodeURIComponent(currentLang)}`;
+              window.location.href = url;
+            });
+
+            // Keyboard accessibility
+            card.addEventListener("keydown", (e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                card.click();
+              }
+            });
+
+            // Staggered fade-in animation
+            card.style.opacity = "0";
+            card.style.transform = "translateY(20px)";
+            suggestedMoviesGrid.appendChild(card);
+
+            setTimeout(() => {
+              card.style.transition = "opacity 0.4s ease, transform 0.4s ease";
+              card.style.opacity = "1";
+              card.style.transform = "translateY(0)";
+            }, index * 100);
+          });
+        }, 400);
+      }
+
+      loadSuggestedMovies();
+
+      // View tracking
+      function safeNow() { return Math.floor(player?.getCurrentTime?.() || 0); }
+      let trackedStart = false;
+      function maybeTrackStart() {
+        if (trackedStart) return;
+        if (safeNow() >= 30) { trackedStart = true; upsertView(false); }
+      }
+      async function upsertView(completed) {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+        const watched_seconds = safeNow();
+        try {
+          await supabase.from('views').upsert(
+            { user_id: user.id, video_id: videoId, title, watched_seconds, completed },
+            { onConflict: 'user_id,video_id' }
+          );
+        } catch (e) {
+          console.warn('view upsert failed', e.message);
+        }
+      }
+
+      window.addEventListener('error', (e) => console.error('Script error:', e.message));
+    })();
