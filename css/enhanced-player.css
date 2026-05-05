@@ -1,0 +1,553 @@
+/* ===================================
+   ENHANCED PLAYER INTERFACE
+   =================================== */
+
+/* Custom Video Controls */
+.custom-controls {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0) 0%,
+    rgba(0, 0, 0, 0.7) 40%,
+    rgba(0, 0, 0, 0.95) 100%
+  );
+  padding: 2rem 1.5rem 1rem;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: 10;
+}
+
+.player-container:hover .custom-controls,
+.custom-controls.visible {
+  opacity: 1;
+}
+
+/* Progress Bar */
+.progress-container {
+  width: 100%;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+  cursor: pointer;
+  position: relative;
+  margin-bottom: 1rem;
+  transition: height 0.2s ease;
+}
+
+.progress-container:hover {
+  height: 8px;
+}
+
+.progress-bar {
+  height: 100%;
+  background: var(--accent-primary);
+  border-radius: 3px;
+  position: relative;
+  transition: width 0.1s linear;
+  box-shadow: 0 0 8px rgba(229, 9, 20, 0.6);
+}
+
+.progress-bar::after {
+  content: '';
+  position: absolute;
+  right: -6px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 12px;
+  height: 12px;
+  background: white;
+  border-radius: 50%;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+
+.progress-container:hover .progress-bar::after {
+  opacity: 1;
+}
+
+/* Buffered Progress */
+.buffered-progress {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 3px;
+  pointer-events: none;
+}
+
+/* Time Tooltip */
+.time-tooltip {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.9);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  margin-bottom: 8px;
+  transition: opacity 0.2s ease;
+}
+
+.progress-container:hover .time-tooltip {
+  opacity: 1;
+}
+
+/* Controls Row */
+.controls-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.controls-left,
+.controls-right {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.controls-center {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+}
+
+/* Control Buttons */
+.control-btn {
+  background: none;
+  border: none;
+  color: white;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.control-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: scale(1.1);
+}
+
+.control-btn:active {
+  transform: scale(0.95);
+}
+
+.control-btn svg {
+  width: 24px;
+  height: 24px;
+  fill: currentColor;
+}
+
+.control-btn.play-pause svg {
+  width: 32px;
+  height: 32px;
+}
+
+/* Volume Control */
+.volume-control {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  position: relative;
+}
+
+.volume-slider-container {
+  width: 0;
+  opacity: 0;
+  overflow: hidden;
+  transition: width 0.3s ease, opacity 0.3s ease;
+}
+
+.volume-control:hover .volume-slider-container,
+.volume-slider-container.active {
+  width: 80px;
+  opacity: 1;
+}
+
+.volume-slider {
+  width: 100%;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 2px;
+  cursor: pointer;
+  position: relative;
+}
+
+.volume-slider-fill {
+  height: 100%;
+  background: white;
+  border-radius: 2px;
+  position: relative;
+  transition: width 0.1s ease;
+}
+
+.volume-slider-fill::after {
+  content: '';
+  position: absolute;
+  right: -4px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 8px;
+  height: 8px;
+  background: white;
+  border-radius: 50%;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* Time Display */
+.time-display {
+  font-size: 0.9rem;
+  color: white;
+  font-variant-numeric: tabular-nums;
+  min-width: 100px;
+  text-align: center;
+}
+
+/* Settings Menu */
+.settings-menu {
+  position: absolute;
+  bottom: 100%;
+  right: 0;
+  background: rgba(20, 20, 20, 0.95);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 0.5rem 0;
+  min-width: 200px;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(10px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  margin-bottom: 0.5rem;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+.settings-menu.active {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+.settings-item {
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: background 0.2s ease;
+}
+
+.settings-item:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.settings-item.active {
+  color: var(--accent-primary);
+}
+
+/* Keyboard Shortcuts Overlay */
+.keyboard-shortcuts-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.9);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.keyboard-shortcuts-overlay.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.shortcuts-panel {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  padding: 2rem;
+  max-width: 600px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+.shortcuts-panel h2 {
+  margin: 0 0 1.5rem;
+  font-size: 1.5rem;
+}
+
+.shortcuts-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+.shortcut-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem;
+  background: var(--bg-tertiary);
+  border-radius: 8px;
+}
+
+.shortcut-key {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  padding: 0.25rem 0.75rem;
+  border-radius: 6px;
+  font-family: monospace;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.shortcut-description {
+  color: var(--text-secondary);
+}
+
+/* Mini Player Mode */
+.mini-player {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 400px;
+  height: 225px;
+  background: black;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+  z-index: 9999;
+  transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+.mini-player.hidden {
+  transform: translateY(120%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.mini-player-header {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.8), transparent);
+  padding: 0.75rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  z-index: 1;
+}
+
+.mini-player-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: white;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mini-player-close {
+  background: rgba(0, 0, 0, 0.6);
+  border: none;
+  color: white;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s ease;
+}
+
+.mini-player-close:hover {
+  background: rgba(0, 0, 0, 0.9);
+}
+
+/* Loading Spinner for Player */
+.player-loading {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 5;
+}
+
+.player-loading .spinner {
+  width: 60px;
+  height: 60px;
+  border-width: 4px;
+}
+
+/* Gesture Indicators */
+.gesture-indicator {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(8px);
+  padding: 1.5rem;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+  z-index: 15;
+}
+
+.gesture-indicator.active {
+  opacity: 1;
+}
+
+.gesture-indicator svg {
+  width: 48px;
+  height: 48px;
+  fill: white;
+}
+
+.gesture-indicator-text {
+  color: white;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+/* Mobile Touch Controls */
+.touch-overlay {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  z-index: 8;
+  touch-action: manipulation;
+}
+
+.touch-zone {
+  position: relative;
+}
+
+.touch-zone.left,
+.touch-zone.right {
+  cursor: pointer;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+  .custom-controls {
+    padding: 1rem 0.75rem 0.75rem;
+  }
+
+  .controls-row {
+    gap: 0.5rem;
+  }
+
+  .controls-left,
+  .controls-right {
+    gap: 0.25rem;
+  }
+
+  .control-btn {
+    padding: 0.375rem;
+  }
+
+  .control-btn svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .control-btn.play-pause svg {
+    width: 28px;
+    height: 28px;
+  }
+
+  .time-display {
+    font-size: 0.8rem;
+    min-width: 80px;
+  }
+
+  .volume-control {
+    display: none;
+  }
+
+  .mini-player {
+    width: calc(100vw - 40px);
+    height: auto;
+    aspect-ratio: 16 / 9;
+    bottom: 80px;
+    right: 20px;
+    left: 20px;
+  }
+
+  .shortcuts-panel {
+    padding: 1.5rem;
+  }
+}
+
+/* Picture-in-Picture Support */
+.pip-button {
+  display: none;
+}
+
+@supports (display: block) {
+  .pip-button {
+    display: flex;
+  }
+}
+
+/* Fullscreen Adjustments */
+.player-container:fullscreen .custom-controls {
+  padding: 2rem 3rem 1.5rem;
+}
+
+.player-container:fullscreen .control-btn svg {
+  width: 28px;
+  height: 28px;
+}
+
+.player-container:fullscreen .control-btn.play-pause svg {
+  width: 40px;
+  height: 40px;
+}
+
+/* Accessibility */
+.control-btn:focus-visible {
+  outline: 2px solid white;
+  outline-offset: 2px;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
