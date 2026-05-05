@@ -56,7 +56,6 @@ gojoMOVIES/
 ├── admin.html          # Administrative dashboard
 ├── admin.js            # Admin dashboard logic
 ├── style.css           # Global styles
-├── .env.example        # Environment variables template
 └── .gitignore          # Git ignore configuration
 ```
 
