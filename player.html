@@ -11,9 +11,17 @@
   <!-- Supabase -->
   <script type="module">
     import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-    const SUPABASE_URL = 'https://fuidgrbtqnjphhyiouxn.supabase.co';
-    const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ1aWRncmJ0cW5qcGhoeWlvdXhuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTcxOTE3ODcsImV4cCI6MjA3Mjc2Nzc4N30.tlX59jWeSzmHcX1voQ9Pi3z_k-AjoJkf-cM2I8Cx8dA';
-    window.supabase = createClient(SUPABASE_URL, SUPABASE_ANON);
+
+    // Load Supabase config from API endpoint
+    try {
+      const response = await fetch('/api/config');
+      if (!response.ok) throw new Error('Failed to load config');
+      const config = await response.json();
+      window.supabase = createClient(config.supabaseUrl, config.supabaseAnonKey);
+    } catch (error) {
+      console.error('Failed to initialize Supabase:', error);
+      window.supabase = null;
+    }
   </script>
 
   <link rel="stylesheet" href="style.css" />

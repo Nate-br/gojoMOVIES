@@ -9,13 +9,23 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Ethiopic:wght@400;600;700&family=Noto+Serif+Ethiopic:wght@600;700&family=Abyssinica+SIL:wght@400;700&display=swap" rel="stylesheet">
 
   <!-- Supabase UMD (stable) -->
-  <script>
-    window.SUPABASE_URL = 'https://fuidgrbtqnjphhyiouxn.supabase.co';
-    window.SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ1aWRncmJ0cW5qcGhoeWlvdXhuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTcxOTE3ODcsImV4cCI6MjA3Mjc2Nzc4N30.tlX59jWeSzmHcX1voQ9Pi3z_k-AjoJkf-cM2I8Cx8dA';
-  </script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.3/dist/umd/supabase.js" crossorigin="anonymous"></script>
   <script>
-    window.supabase = supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON);
+    // Load Supabase config from API endpoint
+    (async function initSupabase() {
+      try {
+        const response = await fetch('/api/config');
+        if (!response.ok) throw new Error('Failed to load config');
+        const config = await response.json();
+        window.SUPABASE_URL = config.supabaseUrl;
+        window.SUPABASE_ANON = config.supabaseAnonKey;
+        window.supabase = supabase.createClient(config.supabaseUrl, config.supabaseAnonKey);
+      } catch (error) {
+        console.error('Failed to initialize Supabase:', error);
+        // Fallback: set a flag that Supabase is unavailable
+        window.supabase = null;
+      }
+    })();
   </script>
 
   <style>
