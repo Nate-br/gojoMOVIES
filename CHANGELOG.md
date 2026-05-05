@@ -2,6 +2,23 @@
 
 All notable changes to gojoMOVIES will be documented in this file.
 
+## [1.2.0] - 2026-05-05
+
+### Added
+- Modular CSS architecture with 5 separate files for better maintainability
+
+### Changed
+- Refactored monolithic style.css into focused modules:
+  - base.css: CSS variables and base styles
+  - player.css: Player layout and overlays
+  - controls.css: Player controls and UI elements
+  - suggested-movies.css: Movie cards and grid layout
+  - responsive.css: Media queries for all breakpoints
+- Updated player.html to import modular CSS files
+
+### Removed
+- Monolithic style.css file (replaced with modular structure)
+
 ## [1.1.0] - 2024-05-05
 
 ### Changed
