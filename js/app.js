@@ -1,10 +1,6 @@
 (function(){
-  // DIAG badge (bottom-right)
-  var diag = document.createElement('div');
-  diag.style.cssText = 'position:fixed;bottom:8px;right:8px;background:#0a0;opacity:.9;color:#fff;font:12px/1.2 system-ui;padding:6px 8px;border-radius:6px;z-index:99999';
-  diag.textContent = 'booting...';
-  document.body.appendChild(diag);
-  function mark(s,c){ diag.textContent = s; diag.style.background = c||'#0a0'; }
+  // DIAG badge removed
+  function mark(s,c){ /* diagnostic badge removed */ }
 
   // Basic error logging
   window.addEventListener('error', function(e){ console.error('JS error:', e.message, e.error||''); mark('error: '+e.message,'#a00'); });
