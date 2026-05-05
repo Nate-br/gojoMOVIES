@@ -1,6 +1,6 @@
 # ጎጆ films (gojoMOVIES)
 
-A modern Ethiopian/Amharic movie streaming platform that aggregates and organizes content from YouTube, providing users with a curated viewing experience.
+A modern Ethiopian/Amharic movie streaming platform that aggregates and organizes video content, providing users with a curated viewing experience.
 
 ## Overview
 
@@ -8,7 +8,7 @@ gojoMOVIES is a full-stack web application designed to showcase Ethiopian and Am
 
 ## Features
 
-- Browse Ethiopian/Amharic movies from YouTube with intelligent categorization
+- Browse Ethiopian/Amharic movies with intelligent categorization
 - User authentication and profile management
 - Personal library with likes, watch later, and viewing history
 - Admin dashboard for user management and platform configuration
@@ -27,7 +27,7 @@ gojoMOVIES is a full-stack web application designed to showcase Ethiopian and Am
 
 ### Backend
 - Vercel Serverless Functions (Node.js)
-- YouTube Data API v3
+- External Video Content API
 
 ### Database & Authentication
 - Supabase (PostgreSQL)
@@ -47,7 +47,7 @@ The application follows a serverless architecture with a static frontend and API
 
 - Node.js 18 or higher
 - Supabase account
-- YouTube Data API v3 key
+- Video content API key
 - Vercel account (for deployment)
 
 ### Environment Configuration
@@ -63,7 +63,7 @@ Configure the following environment variables:
 ```env
 SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_ANON_KEY=your-supabase-anon-key
-YT_API_KEY=your-youtube-api-key
+YT_API_KEY=your-video-api-key
 ```
 
 ### Database Setup
@@ -153,7 +153,7 @@ Ensure all environment variables are configured in the Vercel dashboard under Pr
 ```
 gojoMOVIES/
 ├── api/
-│   ├── catalog.js      # YouTube API integration and content aggregation
+│   ├── catalog.js      # Content aggregation and categorization
 │   ├── config.js       # Configuration endpoint for frontend
 │   └── ping.js         # Health check endpoint
 ├── index.html          # Main application page
@@ -171,7 +171,7 @@ gojoMOVIES/
 
 ### GET `/api/catalog`
 
-Fetches and categorizes Ethiopian/Amharic movies from YouTube.
+Fetches and categorizes Ethiopian/Amharic movies.
 
 **Query Parameters:**
 
@@ -237,7 +237,4 @@ This code is made available for viewing and reference purposes only. You may not
 
 ## Acknowledgments
 
-Built for the Ethiopian cinema community using:
-- Supabase for backend infrastructure
-- YouTube Data API for content aggregation
-- Vercel for serverless deployment
+Built for the Ethiopian cinema community using modern web technologies and cloud infrastructure.
