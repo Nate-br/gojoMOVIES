@@ -2,6 +2,31 @@
 
 All notable changes to gojoMOVIES will be documented in this file.
 
+## [1.4.0] - 2026-05-05
+
+### Added
+- **Error Logging System** (`error-logger.js`):
+  - Global error handling for JavaScript errors, promise rejections, and resource failures
+  - Session tracking with unique IDs
+  - localStorage persistence for debugging
+  - Performance monitoring (page load, DOM ready, first contentful paint)
+  - API error logging with endpoint tracking
+  - Export logs as JSON functionality
+- **Asset Optimization** (`asset-optimizer.js`):
+  - Lazy loading with Intersection Observer API
+  - Automatic image error handling with YouTube thumbnail fallbacks
+  - Responsive thumbnail selection based on viewport size
+  - Resource hints (preconnect, dns-prefetch) for external domains
+  - Performance monitoring for slow-loading resources
+  - Image caching to prevent duplicate loads
+- **MONITORING.md** documentation with usage examples and integration guides
+
+### Improved
+- Page load performance with lazy loading and resource hints
+- Error tracking and debugging capabilities
+- Image loading reliability with automatic fallbacks
+- Development and production monitoring
+
 ## [1.3.0] - 2026-05-05
 
 ### Changed
