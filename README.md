@@ -49,13 +49,18 @@ gojoMOVIES/
 │   ├── catalog.js      # Content aggregation and categorization
 │   ├── config.js       # Configuration endpoint for frontend
 │   └── ping.js         # Health check endpoint
+├── css/
+│   ├── base.css        # CSS variables and base styles
+│   ├── player.css      # Player layout and overlays
+│   ├── controls.css    # Player controls and UI elements
+│   ├── suggested-movies.css  # Movie cards and grid layout
+│   └── responsive.css  # Media queries for all breakpoints
 ├── index.html          # Main application page
 ├── app.js              # Main application logic
 ├── player.html         # Video player interface
 ├── player.js           # Video player logic
 ├── admin.html          # Administrative dashboard
 ├── admin.js            # Admin dashboard logic
-├── style.css           # Global styles
 └── .gitignore          # Git ignore configuration
 ```
 
