@@ -1,0 +1,162 @@
+/* ===================================
+   CONTROLS
+   =================================== */
+#controls {
+  position: relative;
+  max-width: 960px;
+  width: 100%;
+  background: rgba(20, 20, 20, 0.9);
+  border: 1px solid var(--border-subtle);
+  border-radius: 14px;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-sizing: border-box;
+  user-select: none;
+  margin: 0 auto;
+  backdrop-filter: blur(8px);
+  flex-wrap: wrap;
+}
+
+.icon-button {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  width: 36px;
+  height: 36px;
+  padding: 6px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+  color: var(--accent-primary);
+}
+
+.icon-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 0 12px rgba(229, 9, 20, 0.4);
+  border-color: rgba(229, 9, 20, 0.6);
+}
+
+.icon-button.active {
+  background: var(--accent-primary);
+  color: #fff;
+}
+
+.icon-button svg {
+  width: 22px;
+  height: 22px;
+}
+
+/* ===================================
+   VOLUME SLIDER
+   =================================== */
+#volumeSlider {
+  width: 120px;
+  height: 8px;
+  cursor: pointer;
+  border-radius: 4px;
+  -webkit-appearance: none;
+  appearance: none;
+  outline: none;
+  background: #444;
+  border: 1px solid var(--border-subtle);
+}
+
+#volumeSlider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  background: var(--accent-primary);
+  border-radius: 2px;
+  cursor: pointer;
+}
+
+#volumeSlider::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  background: var(--accent-primary);
+  border-radius: 2px;
+  cursor: pointer;
+}
+
+/* ===================================
+   PROGRESS BAR
+   =================================== */
+#progress-container {
+  position: relative;
+  flex-grow: 1;
+  height: 14px;
+  background: #444;
+  border-radius: 7px;
+  cursor: pointer;
+  outline: none;
+  border: 1px solid var(--border-subtle);
+}
+
+#progress {
+  position: absolute;
+  height: 100%;
+  background: var(--accent-primary);
+  width: 0%;
+  border-radius: 7px;
+  transition: width 0.1s linear;
+}
+
+#time-display {
+  color: #cbd5e1;
+  font-family: monospace;
+  font-size: 14px;
+  min-width: 90px;
+  text-align: right;
+  user-select: none;
+}
+
+/* ===================================
+   SPEED MENU
+   =================================== */
+.control-group {
+  position: relative;
+}
+
+#speedBtn {
+  min-width: 46px;
+  height: 36px;
+  padding: 0 10px;
+  border-radius: 10px;
+  border: 1px solid var(--border-subtle);
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--accent-primary);
+  font-weight: 700;
+}
+
+#speedBtn:hover {
+  border-color: rgba(229, 9, 20, 0.5);
+  color: #fff;
+}
+
+#speedMenu {
+  position: absolute;
+  bottom: 120%;
+  right: 0;
+  background: rgba(20, 20, 20, 0.95);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  padding: 6px;
+  display: flex;
+  gap: 6px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+}
+
+#speedMenu button {
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: transparent;
+  border: 1px solid transparent;
+  color: #fff;
+  font-weight: 700;
+}
+
+#speedMenu button.active {
+  border-color: rgba(229, 9, 20, 0.7);
+  color: #fff;
+}

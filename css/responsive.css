@@ -1,0 +1,48 @@
+/* ===================================
+   MEDIA QUERIES
+   =================================== */
+@media (max-width: 600px) {
+  #controls {
+    flex-wrap: wrap;
+  }
+
+  #progress-container {
+    order: 3;
+    width: 100%;
+    margin-top: 6px;
+  }
+
+  #time-display {
+    order: 4;
+    width: 100%;
+    text-align: left;
+    margin-top: 4px;
+  }
+
+  #volumeSlider {
+    width: 90px;
+  }
+
+  .icon-button {
+    width: 40px;
+    height: 40px;
+  }
+
+  #suggestedMoviesGrid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.875rem;
+  }
+}
+
+@media (max-width: 380px) {
+  #suggestedMoviesGrid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+}
+
+@media (max-width: 360px) {
+  #time-display {
+    display: none;
+  }
+}
