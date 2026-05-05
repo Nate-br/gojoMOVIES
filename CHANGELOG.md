@@ -2,6 +2,22 @@
 
 All notable changes to gojoMOVIES will be documented in this file.
 
+## [1.3.0] - 2026-05-05
+
+### Changed
+- Reorganized project structure with dedicated folders:
+  - `js/` - All JavaScript files
+  - `pages/` - All HTML pages
+  - `css/` - All stylesheets (already modular)
+  - `api/` - Serverless functions
+- Updated all file path references in HTML files
+- Created root index.html redirect for seamless navigation
+
+### Improved
+- Better project organization and file discoverability
+- Clearer separation of concerns (pages, scripts, styles, API)
+- Easier maintenance and scalability
+
 ## [1.2.0] - 2026-05-05
 
 ### Added

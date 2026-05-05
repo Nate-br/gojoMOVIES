@@ -55,12 +55,15 @@ gojoMOVIES/
 │   ├── controls.css    # Player controls and UI elements
 │   ├── suggested-movies.css  # Movie cards and grid layout
 │   └── responsive.css  # Media queries for all breakpoints
-├── index.html          # Main application page
-├── app.js              # Main application logic
-├── player.html         # Video player interface
-├── player.js           # Video player logic
-├── admin.html          # Administrative dashboard
-├── admin.js            # Admin dashboard logic
+├── js/
+│   ├── app.js          # Main application logic
+│   ├── player.js       # Video player logic
+│   └── admin.js        # Admin dashboard logic
+├── pages/
+│   ├── index.html      # Main application page
+│   ├── player.html     # Video player interface
+│   └── admin.html      # Administrative dashboard
+├── index.html          # Root redirect to pages/index.html
 └── .gitignore          # Git ignore configuration
 ```
 
