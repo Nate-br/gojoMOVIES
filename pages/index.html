@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ጎጆ films</title>
+
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Ethiopic:wght@400;600;700&family=Noto+Serif+Ethiopic:wght@600;700&family=Abyssinica+SIL:wght@400;700&display=swap" rel="stylesheet">
+
+  <!-- Supabase UMD (stable) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.3/dist/umd/supabase.js" crossorigin="anonymous"></script>
+  <script>
+    // Load Supabase config from API endpoint
+    (async function initSupabase() {
+      try {
+        const response = await fetch('/api/config');
+        if (!response.ok) throw new Error('Failed to load config');
+        const config = await response.json();
+        window.SUPABASE_URL = config.supabaseUrl;
+        window.SUPABASE_ANON = config.supabaseAnonKey;
+        window.supabase = supabase.createClient(config.supabaseUrl, config.supabaseAnonKey);
+      } catch (error) {
+        console.error('Failed to initialize Supabase:', error);
+        // Fallback: set a flag that Supabase is unavailable
+        window.supabase = null;
+      }
+    })();
+  </script>
+
+  <style>
+    :root{
+      --font-ui:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+      --font-amharic-sans:"Noto Sans Ethiopic","Abyssinica SIL","Noto Sans",sans-serif;
+      --font-amharic-serif:"Noto Serif Ethiopic","Abyssinica SIL",serif;
+      --bg-primary:#0a0a0a;--bg-secondary:#141414;--bg-tertiary:#181818;--bg-card:#202020;
+      --text-primary:#fff;--text-secondary:#e0e0e0;--text-tertiary:#b3b3b3;
+      --accent-primary:#e50914;--accent-secondary:#ff2d20;--accent-tertiary:#FFC107;
+      --border-subtle:rgba(255,255,255,.1);
+      --shadow-strong:0 8px 30px rgba(0,0,0,.4);--shadow-subtle:0 4px 12px rgba(0,0,0,.2)
+    }
+    body{font-family:var(--font-ui);background:var(--bg-primary);color:var(--text-primary);margin:0;overflow-x:hidden;line-height:1.5}
+    body::after{content:"";position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");pointer-events:none;z-index:-1}
+    h1,h2,h3{margin:0;font-weight:700}
+    header{position:fixed;inset:0 0 auto 0;z-index:100;background:rgba(10,10,10,.95);backdrop-filter:blur(10px);padding:1rem 2rem;display:flex;justify-content:space-between;align-items:center;box-shadow:0 2px 10px rgba(0,0,0,.4)}
+    header .logo{display:flex;align-items:center;gap:.75rem}
+    .circle-icon{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--accent-primary);color:#fff;font-weight:900;font-size:1.25rem;box-shadow:0 0 15px rgba(229,9,20,.3);user-select:none}
+    header .logo h1{font-size:1.75rem}
+    .header-controls{display:flex;align-items:center;gap:1rem;position:relative}
+    #searchIcon{width:40px;height:40px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:rgba(255,255,255,.1);cursor:pointer}
+    #searchIcon:hover{background:rgba(255,255,255,.2)}
+    #searchInput{width:0;opacity:0;visibility:hidden;position:absolute;right:0;top:calc(100% + .5rem);padding:.75rem 1rem;border-radius:8px;background:var(--bg-tertiary);color:var(--text-primary);border:1px solid var(--border-subtle);box-shadow:var(--shadow-strong);transition:all .3s}
+    #searchInput.active{width:260px;opacity:1;visibility:visible;pointer-events:auto}
+    .btn{padding:.6rem 1.1rem;border-radius:6px;border:1px solid transparent;font-weight:600;font-size:.9rem;cursor:pointer;transition:.2s}
+    .btn-primary{background:var(--accent-primary);color:#fff}.btn-primary:hover{background:var(--accent-secondary)}
+    .btn-secondary{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.2);color:#fff}.btn-secondary:hover{background:rgba(255,255,255,.12)}
+    #userMenu{position:relative}#userDropdown{position:absolute;right:0;top:calc(100% + 6px);background:var(--bg-tertiary);border:1px solid var(--border-subtle);border-radius:8px;min-width:180px;display:none;box-shadow:var(--shadow-strong)}
+    #userDropdown .btn{width:100%;text-align:left;background:transparent;border:none;border-radius:0}
+    main{margin-top:180px;padding:0 2rem}
+    .hero-section{position:relative;overflow:hidden;border-radius:8px;margin-top:60px}
+    .hero-background{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:brightness(.5)}
+    .hero-content{position:relative;z-index:1;display:flex;flex-direction:column;justify-content:flex-end;padding:2rem;min-height:500px;background:linear-gradient(0deg,rgba(0,0,0,.9),rgba(0,0,0,.4) 50%,rgba(0,0,0,0))}
+    .hero-title{font-size:3rem;margin-bottom:1rem;max-width:60%}
+    .hero-description{font-size:1.1rem;color:var(--text-secondary);max-width:60%}
+    .hero-actions{display:flex;gap:1rem;margin-top:1rem}
+    .tabs-container{position:sticky;top:70px;z-index:50;display:flex;justify-content:center;gap:.5rem;margin:2rem auto;padding:.75rem 1.5rem;max-width:1200px;background:linear-gradient(180deg,rgba(10,10,10,.9),rgba(10,10,10,.5));backdrop-filter:blur(10px);overflow-x:auto;scrollbar-width:none}
+    .tabs-container::-webkit-scrollbar{display:none}
+    .tab-button{padding:.6rem 1.25rem;border:none;border-radius:6px;font-weight:600;color:var(--text-tertiary);background:transparent;cursor:pointer;white-space:nowrap}
+    .tab-button.active{background:var(--accent-primary);color:#fff}
+    .video-section{max-width:1200px;margin:0 auto 3rem;opacity:0;transform:translateY(20px);transition:all .5s;pointer-events:none}
+    .video-section.active{opacity:1;transform:translateY(0);pointer-events:auto}
+    .video-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:1.5rem}
+    @media(max-width:768px){.video-list{grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:1rem}.hero-title{font-size:2rem;max-width:100%}.hero-description{max-width:100%}#searchInput.active{width:min(80vw,280px)}}
+    .video-card{position:relative;background:var(--bg-card);border-radius:4px;overflow:hidden;transition:transform .25s, box-shadow .25s;box-shadow:var(--shadow-subtle);cursor:pointer}
+    .video-card:hover{transform:translateY(-6px) scale(1.03)}
+    .thumbnail{position:relative;aspect-ratio:16/9;overflow:hidden}
+    .thumbnail img{width:100%;height:100%;object-fit:cover;transition:transform .5s}
+    .video-card:hover .thumbnail img{transform:scale(1.05)}
+    .play-icon{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:48px;height:48px;background:rgba(0,0,0,.65);border-radius:50%;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .3s}
+    .video-card:hover .play-icon{opacity:1}
+    .info{padding:1rem}.info h3{font-size:1rem;font-weight:600;margin:0 0 .5rem;height:2.8em;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+    .meta{display:flex;align-items:center;justify-content:space-between}
+    .views{font-size:.85rem;color:var(--text-tertiary)}
+    .rating{display:flex;align-items:center;gap:.25rem}.rating svg{width:14px;height:14px;fill:var(--accent-tertiary)}
+    .overlay-actions{position:absolute;top:8px;right:8px;display:flex;gap:6px;z-index:3}
+    .overlay-actions button{width:32px;height:32px;border-radius:50%;border:none;background:rgba(0,0,0,.55);color:#fff;cursor:pointer}
+    .overlay-actions button.active{background:var(--accent-primary)}
+    .pagination-controls{display:flex;justify-content:center;align-items:center;gap:.75rem;margin:2rem 0}
+    .pagination-btn{padding:.5rem 1rem;border-radius:4px;background:var(--bg-tertiary);color:var(--text-secondary);border:1px solid var(--border-subtle);cursor:pointer}
+    .pagination-btn:disabled{opacity:.5;cursor:not-allowed}
+    .page-indicator{font-size:.9rem;color:var(--text-tertiary)}
+    footer{background:var(--bg-secondary);color:var(--text-tertiary);padding:3rem 2rem;margin-top:4rem}
+    .footer-content{max-width:1200px;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:2rem}
+    .footer-column h4{margin-bottom:1rem;color:#fff}
+    .footer-bottom{margin-top:2rem;padding-top:1rem;border-top:1px solid var(--border-subtle);text-align:center}
+    /* Rating modal */
+    .rating-modal{position:fixed;inset:0;background:rgba(0,0,0,.85);display:flex;align-items:center;justify-content:center;z-index:999;backdrop-filter:blur(5px);opacity:0;pointer-events:none;transition:.3s}
+    .rating-modal.active{opacity:1;pointer-events:auto}
+    .rating-modal-content{background:var(--bg-secondary);border-radius:8px;padding:2rem;max-width:90%;width:450px;text-align:center;box-shadow:var(--shadow-strong)}
+    .rating-modal-stars{display:flex;justify-content:center;gap:.75rem;margin:1.5rem 0}
+    .rating-modal-stars svg{width:42px;height:42px}
+  </style>
+</head>
+
+<body>
+  <header id="header">
+    <div class="logo">
+      <!-- Red “ጎ” logo -->
+      <div id="logoMark" class="circle-icon" title="ጎ">ጎ</div>
+      <h1>ጎጆ films</h1>
+    </div>
+    <div class="header-controls">
+      <span id="searchIcon" role="button" tabindex="0" aria-label="Search">
+        <svg viewBox="0 0 24 24" width="22" height="22" xmlns="http://www.w3.org/2000/svg">
+          <path d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 1 0-.7.7l.27.28v.79l5.2 5.2 1.4-1.4-5.2-5.2zm-6 0a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9z" fill="currentColor"/>
+        </svg>
+      </span>
+      <input id="searchInput" type="text" placeholder="Search movies..." aria-label="Search movies" />
+      <button id="refreshBtn" aria-label="Refresh catalog" title="Refresh catalog">
+        <svg viewBox="0 0 24 24" width="18" height="18" xmlns="http://www.w3.org/2000/svg">
+          <path fill="currentColor" d="M17.65 6.35A7.95 7.95 0 0 0 12 4V1L7 6l5 5V7a5 5 0 1 1-4.9 6h-2.1a7 7 0 1 0 12.65-6.65z"/>
+        </svg>
+      </button>
+      <button id="langToggle">EN</button>
+
+      <!-- Auth -->
+      <button id="loginBtn" class="btn btn-secondary">Login</button>
+      <div id="userMenu" class="btn btn-secondary" style="display:none;">
+        <span id="userName">Profile</span>
+        <div id="userDropdown">
+          <button id="myListBtn" class="btn">My List</button>
+          <a id="adminLink" href="admin.html" class="btn" style="display:none;">Admin</a>
+          <button id="logoutBtn" class="btn">Logout</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <section class="hero-section">
+    <!-- Static first image (shows even if API fails) -->
+    <img id="heroBackground" class="hero-background" src="https://img.youtube.com/vi/SxVyFHDyrRI/maxresdefault.jpg" alt="" />
+    <div class="hero-content">
+      <h2 class="hero-title" id="heroTitle">ጥላዬ (Telaye)</h2>
+      <p class="hero-description" id="heroDescription">Watch the latest and greatest Ethiopian films on ጎጆ films.</p>
+      <div class="hero-actions">
+        <button class="btn btn-primary" id="heroPlayBtn">Watch Now</button>
+        <button class="btn btn-secondary" id="heroInfoBtn">More Info</button>
+      </div>
+    </div>
+  </section>
+
+  <div class="tabs-container" role="tablist" aria-label="Movie categories">
+    <button class="tab-button active" role="tab" aria-selected="true" aria-controls="new-releases">New Releases</button>
+    <button class="tab-button" role="tab" aria-selected="false" aria-controls="popular">Popular</button>
+    <button class="tab-button" role="tab" aria-selected="false" aria-controls="top-rated">Top Rated</button>
+    <button class="tab-button" role="tab" aria-selected="false" aria-controls="most-viewed">Most Viewed</button>
+    <button class="tab-button" role="tab" aria-selected="false" aria-controls="comedies">Comedies</button>
+    <button class="tab-button" role="tab" aria-selected="false" aria-controls="dramas">Dramas</button>
+    <button class="tab-button" role="tab" aria-selected="false" aria-controls="my-list" id="myListTab">My List</button>
+    <button class="tab-button" role="tab" aria-selected="false" aria-controls="search-results" id="searchTab" hidden>Search</button>
+  </div>
+
+  <main>
+    <section class="video-section active" id="new-releases" role="tabpanel">
+      <h2>New Releases</h2>
+      <div id="new-releases-grid" class="video-list"></div>
+      <div id="new-releases-pagination" class="pagination-controls">
+        <button class="pagination-btn prev-page" disabled>Previous</button>
+        <span class="page-indicator">Page <span class="current-page">1</span> of <span class="total-pages">1</span></span>
+        <button class="pagination-btn next-page">Next</button>
+      </div>
+    </section>
+
+    <section class="video-section" id="popular" role="tabpanel" hidden>
+      <h2>Popular</h2>
+      <div id="popular-grid" class="video-list"></div>
+      <div id="popular-pagination" class="pagination-controls">
+        <button class="pagination-btn prev-page" disabled>Previous</button>
+        <span class="page-indicator">Page <span class="current-page">1</span> of <span class="total-pages">1</span></span>
+        <button class="pagination-btn next-page">Next</button>
+      </div>
+    </section>
+
+    <section class="video-section" id="top-rated" role="tabpanel" hidden>
+      <h2>Top Rated</h2>
+      <div id="top-rated-grid" class="video-list"></div>
+      <div id="top-rated-pagination" class="pagination-controls">
+        <button class="pagination-btn prev-page" disabled>Previous</button>
+        <span class="page-indicator">Page <span class="current-page">1</span> of <span class="total-pages">1</span></span>
+        <button class="pagination-btn next-page">Next</button>
+      </div>
+    </section>
+
+    <section class="video-section" id="most-viewed" role="tabpanel" hidden>
+      <h2>Most Viewed</h2>
+      <div id="most-viewed-grid" class="video-list"></div>
+      <div id="most-viewed-pagination" class="pagination-controls">
+        <button class="pagination-btn prev-page" disabled>Previous</button>
+        <span class="page-indicator">Page <span class="current-page">1</span> of <span class="total-pages">1</span></span>
+        <button class="pagination-btn next-page">Next</button>
+      </div>
+    </section>
+
+    <section class="video-section" id="comedies" role="tabpanel" hidden>
+      <h2>Comedies</h2>
+      <div id="comedies-grid" class="video-list"></div>
+      <div id="comedies-pagination" class="pagination-controls">
+        <button class="pagination-btn prev-page" disabled>Previous</button>
+        <span class="page-indicator">Page <span class="current-page">1</span> of <span class="total-pages">1</span></span>
+        <button class="pagination-btn next-page">Next</button>
+      </div>
+    </section>
+
+    <section class="video-section" id="dramas" role="tabpanel" hidden>
+      <h2>Dramas</h2>
+      <div id="dramas-grid" class="video-list"></div>
+      <div id="dramas-pagination" class="pagination-controls">
+        <button class="pagination-btn prev-page" disabled>Previous</button>
+        <span class="page-indicator">Page <span class="current-page">1</span> of <span class="total-pages">1</span></span>
+        <button class="pagination-btn next-page">Next</button>
+      </div>
+    </section>
+
+    <section class="video-section" id="my-list" role="tabpanel" hidden>
+      <h2>My List</h2>
+      <div id="my-list-grid" class="video-list"></div>
+      <div class="page-indicator" id="myListCount" style="margin-top:1rem;color:var(--text-tertiary);"></div>
+    </section>
+
+    <section class="video-section" id="search-results" role="tabpanel" hidden>
+      <h2>Search Results</h2>
+      <div id="search-results-grid" class="video-list"></div>
+      <div class="page-indicator" style="margin-top:1rem;color:var(--text-tertiary);" id="searchCount"></div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="footer-content">
+      <div class="footer-column">
+        <h4>ጎጆ films</h4>
+        <ul>
+          <li><a href="#">About Us</a></li><li><a href="#">Contact</a></li>
+          <li><a href="#">Careers</a></li><li><a href="#">Press</a></li>
+        </ul>
+      </div>
+      <div class="footer-column">
+        <h4>Browse</h4>
+        <ul>
+          <li><a href="#">New Releases</a></li><li><a href="#">Top Rated</a></li>
+          <li><a href="#">Comedies</a></li><li><a href="#">Dramas</a></li>
+        </ul>
+      </div>
+      <div class="footer-column">
+        <h4>Help</h4>
+        <ul>
+          <li><a href="#">FAQ</a></li><li><a href="#">Terms of Service</a></li>
+          <li><a href="#">Privacy Policy</a></li><li><a href="#">Content Guidelines</a></li>
+        </ul>
+      </div>
+      <div class="footer-column">
+        <h4>Connect</h4>
+        <ul>
+          <li><a href="#">Facebook</a></li><li><a href="#">Instagram</a></li>
+          <li><a href="#">Twitter</a></li><li><a href="#">YouTube</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom"><p>&copy; 2025 ጎጆ films. All rights reserved.</p></div>
+  </footer>
+
+  <!-- Rating Modal -->
+  <div id="ratingModal" class="rating-modal">
+    <div class="rating-modal-content">
+      <h3 class="rating-modal-title">Rate this movie</h3>
+      <div id="modalMovieTitle"></div>
+      <div class="rating-modal-stars" id="modalStars">
+        <span class="star" data-value="1"><svg viewBox="0 0 24 24" fill="#888"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg></span>
+        <span class="star" data-value="2"><svg viewBox="0 0 24 24" fill="#888"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg></span>
+        <span class="star" data-value="3"><svg viewBox="0 0 24 24" fill="#888"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg></span>
+        <span class="star" data-value="4"><svg viewBox="0 0 24 24" fill="#888"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg></span>
+        <span class="star" data-value="5"><svg viewBox="0 0 24 24" fill="#888"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg></span>
+      </div>
+      <div style="display:flex;gap:1rem;justify-content:center;margin-top:2rem;">
+        <button id="cancelRatingBtn" class="btn btn-secondary">Cancel</button>
+        <button id="submitRatingBtn" class="btn btn-primary">Submit Rating</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Auth Modal -->
+  <style>
+    .modal{position:fixed;inset:0;background:rgba(0,0,0,.75);display:none;align-items:center;justify-content:center;z-index:1000}
+    .modal.active{display:flex}
+    .modal-card{background:var(--bg-secondary);border:1px solid var(--border-subtle);border-radius:10px;padding:1.25rem;width:min(90vw,400px);box-shadow:var(--shadow-strong)}
+    .modal-card input{width:100%;margin-bottom:.75rem;padding:.6rem;border-radius:8px;border:1px solid var(--border-subtle);background:var(--bg-tertiary);color:#fff}
+  </style>
+  <div id="authModal" class="modal" role="dialog" aria-modal="true">
+    <div class="modal-card">
+      <h3>Login / Sign up</h3>
+      <input id="authEmail" type="email" placeholder="Email"/>
+      <input id="authPass" type="password" placeholder="Password"/>
+      <div style="display:flex;gap:.5rem;">
+        <button id="authLogin" class="btn btn-primary" style="flex:1;">Login</button>
+        <button id="authSignup" class="btn btn-secondary" style="flex:1;">Sign Up</button>
+      </div>
+      <button id="authClose" class="btn btn-secondary" style="margin-top:.75rem;width:100%;">Close</button>
+    </div>
+  </div>
+<script src="app.js"></script>
+
+</body>
+</html>
