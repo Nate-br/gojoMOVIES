@@ -62,7 +62,7 @@ gojoMOVIES/
 
 ## License
 
-Copyright © 2024. All Rights Reserved.
+Copyright © 2026. All Rights Reserved.
 
 This code is made available for **viewing and reference purposes only**. You may not use, modify, distribute, or create derivative works from this code without explicit permission. See the [LICENSE](LICENSE) file for complete terms.
 
