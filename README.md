@@ -6,6 +6,15 @@ A modern Ethiopian/Amharic movie streaming platform that aggregates and organize
 
 gojoMOVIES is a full-stack web application designed to showcase Ethiopian and Amharic cinema. The platform features user authentication, personalized libraries, content categorization, and an intuitive browsing experience optimized for both desktop and mobile devices.
 
+## Built With
+
+![Vanilla JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black)
+![Supabase](https://img.shields.io/badge/Supabase-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge&logo=postgresql&logoColor=white)
+![Vercel](https://img.shields.io/badge/Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white)
+![Serverless](https://img.shields.io/badge/Serverless-FD5750?style=for-the-badge&logo=serverless&logoColor=white)
+![API](https://img.shields.io/badge/REST_API-009688?style=for-the-badge&logo=fastapi&logoColor=white)
+
 ## Features
 
 - Browse Ethiopian/Amharic movies with intelligent categorization
